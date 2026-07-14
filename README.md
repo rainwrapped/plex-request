@@ -1,59 +1,45 @@
-# PlexRequests
+# Plex Request Hub
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.0.6.
+Plex Request Hub is an Angular + TypeScript web app for browsing curated media feeds, batching show
+and movie requests, and sending those requests to an admin approval queue before anything is added
+to Plex.
 
-## Development server
+## Included workflow
 
-To start a local development server, run:
+- Search across configured feed entries by title, source feed, or tags
+- Submit multiple movies and shows in a single request
+- Switch between demo account roles:
+  - **View-only**: browse feeds without requesting
+  - **Requestor**: build and submit request batches
+  - **Admin**: review pending requests and approve or deny them
+- Persist request activity locally in the browser via `localStorage`
 
-```bash
-ng serve
-```
+## Demo accounts
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+The app currently ships with seeded in-browser demo accounts and sample feed data:
 
-## Code scaffolding
+- `Avery Viewer` — view-only access
+- `Riley Requestor` — can submit requests
+- `Jordan Admin` — can approve or deny pending requests
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+## Local development
 
-```bash
-ng generate component component-name
-```
-
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
-
-```bash
-ng generate --help
-```
-
-## Building
-
-To build the project run:
+Install dependencies and start the Angular dev server:
 
 ```bash
-ng build
+npm install
+npm start
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+Then open `http://localhost:4200/`.
 
-## Running unit tests
+## Scripts
 
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
+- `npm run build` — production build
+- `npm run test -- --watch=false` — run the Vitest test suite once
 
-```bash
-ng test
-```
+## Notes
 
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+- This repo has been fully repurposed into a front-end Angular application.
+- The current implementation uses local mock data and browser persistence, so it is ready for a
+  future real backend for authentication, feed ingestion, and Plex integration.

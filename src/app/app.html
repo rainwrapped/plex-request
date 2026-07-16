@@ -65,14 +65,35 @@
             />
           </label>
 
-          <label class="field">
+          <label class="field password-field">
             <span>Password</span>
-            <input
-              type="password"
-              [ngModel]="loginPassword()"
-              (ngModelChange)="updateLoginPassword($event)"
-              placeholder="Enter account password"
-            />
+            <div class="password-input-row">
+              <input
+                [type]="showLoginPassword() ? 'text' : 'password'"
+                [ngModel]="loginPassword()"
+                (ngModelChange)="updateLoginPassword($event)"
+                placeholder="Enter account password"
+              />
+              <button
+                type="button"
+                class="inline-button password-toggle"
+                (click)="toggleLoginPasswordVisibility()"
+                [attr.aria-pressed]="showLoginPassword()"
+                [attr.aria-label]="showLoginPassword() ? 'Hide password' : 'Show password'"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  @if (showLoginPassword()) {
+                    <path
+                      d="M3.98 12c1.77-4.39 5.7-7 8.02-7 2.32 0 6.25 2.61 8.02 7-.86 2.12-2.2 3.91-3.8 5.17l1.44 1.44c1.93-1.52 3.5-3.63 4.47-6.11.11-.28.11-.59 0-.87C19.53 6.83 15.08 4 12 4c-2.05 0-4.36 1.08-6.31 2.95L3.59 4.85 2.18 6.26 4.2 8.28A14.79 14.79 0 0 0 1.9 11.13c-.11.28-.11.59 0 .87C2.87 14.48 4.44 16.59 6.37 18.11l1.44-1.44C6.22 15.41 4.88 13.62 3.98 12Zm8.02 4c-1.65 0-3-1.35-3-3 0-.39.08-.76.21-1.11l4.9 4.9c-.35.13-.72.21-1.11.21Zm3-3c0 .39-.08.76-.21 1.11l-4.9-4.9c.35-.13.72-.21 1.11-.21 1.65 0 3 1.35 3 3Z"
+                    />
+                  } @else {
+                    <path
+                      d="M12 5c3.08 0 7.53 2.83 10.1 6.87.11.28.11.59 0 .87C19.53 16.77 15.08 20 12 20s-7.53-3.23-10.1-7.26a.92.92 0 0 1 0-.87C4.47 7.83 8.92 5 12 5Zm0 2C9.68 7 5.75 9.61 3.98 12c1.77 2.39 5.7 5 8.02 5 2.32 0 6.25-2.61 8.02-5-1.77-2.39-5.7-5-8.02-5Zm0 2.5A2.5 2.5 0 1 1 12 14a2.5 2.5 0 0 1 0-5Zm0 2A.5.5 0 1 0 12 13a.5.5 0 0 0 0-1Z"
+                    />
+                  }
+                </svg>
+              </button>
+            </div>
           </label>
 
           <div class="actions-row">
@@ -142,7 +163,16 @@
 
       <div class="feed-grid">
         @for (item of filteredFeedItems(); track trackById($index, item)) {
-          <article class="feed-card" [class.selected]="isFeedItemSelected(item.id)">
+          <article
+            class="feed-card"
+            [class.selected]="isFeedItemSelected(item.id)"
+            [class.active]="selectedFeedItem()?.id === item.id"
+            role="button"
+            tabindex="0"
+            (click)="openFeedItemDetails(item)"
+            (keydown.enter)="openFeedItemDetails(item)"
+            (keydown.space)="$event.preventDefault(); openFeedItemDetails(item)"
+          >
             <div class="feed-card-header">
               <div>
                 <h3>{{ item.title }}</h3>
@@ -169,7 +199,7 @@
               class="action-button"
               [class.secondary]="!isFeedItemSelected(item.id)"
               [disabled]="!canRequest() || item.availability?.inPlex"
-              (click)="toggleFeedItemSelection(item.id)"
+              (click)="$event.stopPropagation(); toggleFeedItemSelection(item.id)"
             >
               @if (item.availability?.inPlex) {
                 Already in Plex
@@ -192,6 +222,112 @@
     </section>
 
     <aside class="sidebar">
+      <section class="card detail-card">
+        <div class="section-header">
+          <div>
+            <p class="eyebrow">Card details</p>
+            <h2>
+              @if (selectedFeedItem(); as detailItem) {
+                {{ detailItem.title }}
+              } @else {
+                Click a card for show and movie details
+              }
+            </h2>
+          </div>
+          @if (selectedFeedItem(); as detailItem) {
+            <span class="badge">{{ detailItem.kind | titlecase }} · {{ detailItem.year }}</span>
+          }
+        </div>
+
+        @if (selectedFeedItem(); as detailItem) {
+          @if (selectedFeedItemLoading()) {
+            <p class="detail-copy">Loading IMDb and Rotten Tomatoes source data...</p>
+          } @else if (selectedFeedItemDetails(); as details) {
+            <p class="section-copy">{{ details.overview }}</p>
+
+            @if (details.tagline) {
+              <p class="detail-copy"><strong>Tagline:</strong> {{ details.tagline }}</p>
+            }
+
+            <div class="detail-metrics">
+              @if (details.runtimeMinutes) {
+                <span class="badge muted">{{ details.runtimeMinutes }} min</span>
+              }
+              @for (genre of details.genres; track genre) {
+                <span class="badge">{{ genre }}</span>
+              }
+            </div>
+
+            <div class="detail-sources">
+              <div class="source-group">
+                <p class="eyebrow">IMDb source</p>
+                <a [href]="details.imdbUrl" target="_blank" rel="noreferrer">Open title page</a>
+                @if (details.imdbId) {
+                  <p class="detail-copy">IMDb ID: {{ details.imdbId }}</p>
+                }
+              </div>
+
+              <div class="source-group">
+                <p class="eyebrow">Rotten Tomatoes reviews</p>
+                <a [href]="details.rottenTomatoesUrl" target="_blank" rel="noreferrer">Open review source</a>
+                @if (details.rottenTomatoesScore) {
+                  <p class="detail-copy">Score: {{ details.rottenTomatoesScore }}</p>
+                }
+                @if (details.rottenTomatoesConsensus) {
+                  <p class="detail-copy">Consensus: {{ details.rottenTomatoesConsensus }}</p>
+                }
+              </div>
+            </div>
+
+            @if (details.cast.length) {
+              <div class="detail-cast">
+                <p class="eyebrow">Cast</p>
+                <div class="tag-list">
+                  @for (member of details.cast; track member) {
+                    <span class="tag">{{ member }}</span>
+                  }
+                </div>
+              </div>
+            }
+
+            @if (details.sourceLinks.length) {
+              <div class="detail-links">
+                @for (sourceLink of details.sourceLinks; track sourceLink.url) {
+                  <a class="source-link" [href]="sourceLink.url" target="_blank" rel="noreferrer">
+                    <strong>{{ sourceLink.label }}</strong>
+                    <span>{{ sourceLink.note }}</span>
+                  </a>
+                }
+              </div>
+            }
+          } @else {
+            <p class="detail-copy">{{ detailItem.summary }}</p>
+            <div class="detail-links">
+              <a
+                class="source-link"
+                [href]="buildImdbSearchUrl(detailItem.title, detailItem.year)"
+                target="_blank"
+                rel="noreferrer"
+              >
+                <strong>IMDb source</strong>
+                <span>Open the matching title page.</span>
+              </a>
+              <a
+                class="source-link"
+                [href]="buildRottenTomatoesSearchUrl(detailItem.title, detailItem.year)"
+                target="_blank"
+                rel="noreferrer"
+              >
+                <strong>Rotten Tomatoes reviews</strong>
+                <span>Search for critic and audience reviews.</span>
+              </a>
+            </div>
+          }
+        } @else {
+          <p class="detail-copy">Click a card to load show or movie information, IMDb source links, and Rotten Tomatoes review sourcing.</p>
+        }
+      </section>
+
       <section class="card">
         <div class="section-header">
           <div>

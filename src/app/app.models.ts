@@ -30,6 +30,29 @@ export interface FeedItem {
   availability?: FeedAvailability;
 }
 
+export interface MediaSourceLink {
+  label: string;
+  url: string;
+  note: string;
+}
+
+export interface MediaDetails {
+  title: string;
+  kind: MediaKind;
+  year: number;
+  overview: string;
+  tagline?: string;
+  runtimeMinutes?: number;
+  genres: string[];
+  cast: string[];
+  imdbId?: string;
+  imdbUrl: string;
+  rottenTomatoesUrl: string;
+  rottenTomatoesScore?: string;
+  rottenTomatoesConsensus?: string;
+  sourceLinks: MediaSourceLink[];
+}
+
 export interface RequestLineItem {
   id: string;
   title: string;

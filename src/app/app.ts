@@ -2,7 +2,7 @@ import { DatePipe, TitleCasePipe } from '@angular/common';
 import { Component, computed, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
-import { FeedItem, IntegrationSettings, RequestStatus, UserAccount } from './app.models';
+import { FeedItem, IntegrationSettings, MediaDetails, RequestStatus, UserAccount } from './app.models';
 import { RequestStoreService } from './request-store.service';
 
 @Component({
@@ -31,9 +31,13 @@ export class App {
   protected readonly savingSettings = this.requestStore.savingSettings;
   protected readonly loginUsername = signal('requestor');
   protected readonly loginPassword = signal('');
+  protected readonly showLoginPassword = signal(false);
   protected readonly loginError = signal('');
   protected readonly searchTerm = signal('');
   protected readonly selectedKind = signal<'all' | 'movie' | 'show'>('all');
+  protected readonly selectedFeedItem = signal<FeedItem | null>(null);
+  protected readonly selectedFeedItemDetails = signal<MediaDetails | null>(null);
+  protected readonly selectedFeedItemLoading = signal(false);
   protected readonly requestNote = signal('');
   protected readonly reviewNotes = signal<Record<string, string>>({});
   protected readonly submissionMessage = signal('');
@@ -56,6 +60,10 @@ export class App {
     this.loginError.set('');
   }
 
+  protected toggleLoginPasswordVisibility(): void {
+    this.showLoginPassword.update((visible) => !visible);
+  }
+
   protected async login(): Promise<void> {
     const loggedIn = await this.requestStore.login(this.loginUsername(), this.loginPassword());
     if (!loggedIn) {
@@ -64,10 +72,13 @@ export class App {
     }
 
     this.loginPassword.set('');
+    this.showLoginPassword.set(false);
     this.loginError.set('');
     this.requestNote.set('');
     this.submissionMessage.set('');
     this.settingsForm.set(this.requestStore.settings());
+    this.selectedFeedItem.set(null);
+    this.selectedFeedItemDetails.set(null);
   }
 
   protected async logout(): Promise<void> {
@@ -75,8 +86,12 @@ export class App {
     this.requestNote.set('');
     this.submissionMessage.set('');
     this.loginPassword.set('');
+    this.showLoginPassword.set(false);
     this.loginError.set('');
     this.adminMessage.set('');
+    this.selectedFeedItem.set(null);
+    this.selectedFeedItemDetails.set(null);
+    this.selectedFeedItemLoading.set(false);
   }
 
   protected updateSearchTerm(value: string): void {
@@ -96,6 +111,28 @@ export class App {
   protected toggleFeedItemSelection(feedItemId: string): void {
     this.requestStore.toggleFeedItemSelection(feedItemId);
     this.submissionMessage.set('');
+  }
+
+  protected async openFeedItemDetails(feedItem: FeedItem): Promise<void> {
+    this.selectedFeedItem.set(feedItem);
+    this.selectedFeedItemLoading.set(true);
+
+    const details = await this.requestStore.loadFeedItemDetails(feedItem);
+    const currentSelected = this.selectedFeedItem();
+    if (!currentSelected || currentSelected.id !== feedItem.id) {
+      return;
+    }
+
+    this.selectedFeedItemDetails.set(details);
+    this.selectedFeedItemLoading.set(false);
+  }
+
+  protected buildImdbSearchUrl(title: string, year: number): string {
+    return `https://www.imdb.com/find/?q=${encodeURIComponent(`${title} ${year}`)}`;
+  }
+
+  protected buildRottenTomatoesSearchUrl(title: string, year: number): string {
+    return `https://www.rottentomatoes.com/search?search=${encodeURIComponent(`${title} ${year}`)}`;
   }
 
   protected updateRequestNote(value: string): void {

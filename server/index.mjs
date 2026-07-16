@@ -364,6 +364,160 @@ function mapTmdbResult(result, kind, genreMap, feedName) {
   };
 }
 
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function buildImdbSearchUrl(item) {
+  return `https://www.imdb.com/find/?q=${encodeURIComponent(`${item.title} ${item.year}`)}`;
+}
+
+function buildRottenTomatoesSearchUrl(item) {
+  return `https://www.rottentomatoes.com/search?search=${encodeURIComponent(`${item.title} ${item.year}`)}`;
+}
+
+function buildFallbackMediaDetails(item) {
+  return {
+    title: item.title,
+    kind: item.kind,
+    year: item.year,
+    overview: item.summary || 'No overview is available for this title yet.',
+    genres: Array.isArray(item.tags) ? item.tags.slice(0, 4) : [],
+    cast: [],
+    imdbUrl: buildImdbSearchUrl(item),
+    rottenTomatoesUrl: buildRottenTomatoesSearchUrl(item),
+    sourceLinks: [
+      {
+        label: 'IMDb source',
+        url: buildImdbSearchUrl(item),
+        note: 'Search IMDb for the matching title page.',
+      },
+      {
+        label: 'Rotten Tomatoes reviews',
+        url: buildRottenTomatoesSearchUrl(item),
+        note: 'Search Rotten Tomatoes for critic and audience reviews.',
+      },
+    ],
+  };
+}
+
+async function resolveTmdbDetails(item, settings) {
+  if (!getEnvironmentStatus(settings).tmdbConfigured) {
+    return null;
+  }
+
+  let tmdbId = item.tmdbId;
+  if (!tmdbId) {
+    const searchPath = item.kind === 'movie' ? '/search/movie' : '/search/tv';
+    const searchPayload = await tmdbFetch(settings, searchPath, {
+      include_adult: 'false',
+      page: 1,
+      query: `${item.title} ${item.year}`,
+    });
+
+    const match = (searchPayload.results ?? []).find((candidate) => {
+      const dateValue = item.kind === 'movie' ? candidate.release_date : candidate.first_air_date;
+      return Number.parseInt(String(dateValue ?? '').slice(0, 4), 10) === Number(item.year);
+    }) ?? searchPayload.results?.[0];
+
+    if (!match) {
+      return null;
+    }
+
+    tmdbId = match.id;
+  }
+
+  const detailPath = item.kind === 'movie' ? `/movie/${tmdbId}` : `/tv/${tmdbId}`;
+  return tmdbFetch(settings, detailPath, {
+    append_to_response: 'external_ids,credits',
+  });
+}
+
+async function resolveRottenTomatoesScore(item) {
+  const searchUrl = buildRottenTomatoesSearchUrl(item);
+
+  try {
+    const response = await fetch(searchUrl, {
+      headers: {
+        accept: 'text/html,application/xhtml+xml',
+      },
+    });
+
+    if (!response.ok) {
+      return { rottenTomatoesUrl: searchUrl };
+    }
+
+    const text = (await response.text()).replace(/\s+/g, ' ');
+    const titleIndex = text.toLowerCase().indexOf(String(item.title).toLowerCase());
+    if (titleIndex === -1) {
+      return { rottenTomatoesUrl: searchUrl };
+    }
+
+    const start = Math.max(0, titleIndex - 240);
+    const end = Math.min(text.length, titleIndex + 240);
+    const window = text.slice(start, end);
+    const scoreMatch = window.match(/(Certified fresh score|Fresh score|Rotten score|No score yet)\.\s*(\d+%|--)/i);
+
+    if (!scoreMatch) {
+      return { rottenTomatoesUrl: searchUrl };
+    }
+
+    return {
+      rottenTomatoesUrl: searchUrl,
+      rottenTomatoesScore: scoreMatch[2],
+    };
+  } catch {
+    return { rottenTomatoesUrl: searchUrl };
+  }
+}
+
+async function buildMediaDetails(item, settings) {
+  const tmdbDetails = await resolveTmdbDetails(item, settings);
+  if (!tmdbDetails) {
+    return buildFallbackMediaDetails(item);
+  }
+
+  const imdbId = tmdbDetails.external_ids?.imdb_id || '';
+  const genreNames = Array.isArray(tmdbDetails.genres)
+    ? tmdbDetails.genres.map((genre) => genre.name).filter(Boolean).slice(0, 4)
+    : [];
+  const cast = Array.isArray(tmdbDetails.credits?.cast)
+    ? tmdbDetails.credits.cast.map((member) => member.name).filter(Boolean).slice(0, 6)
+    : [];
+  const runtime = item.kind === 'movie' ? tmdbDetails.runtime : tmdbDetails.episode_run_time?.[0];
+  const rottenTomatoes = await resolveRottenTomatoesScore(item);
+  const imdbUrl = imdbId ? `https://www.imdb.com/title/${imdbId}/` : buildImdbSearchUrl(item);
+
+  return {
+    title: item.kind === 'movie' ? tmdbDetails.title || item.title : tmdbDetails.name || item.title,
+    kind: item.kind,
+    year: item.year,
+    overview: tmdbDetails.overview || item.summary || 'No overview is available for this title yet.',
+    tagline: tmdbDetails.tagline || '',
+    runtimeMinutes: Number(runtime || 0) || undefined,
+    genres: genreNames,
+    cast,
+    imdbId: imdbId || undefined,
+    imdbUrl,
+    rottenTomatoesUrl: rottenTomatoes.rottenTomatoesUrl,
+    rottenTomatoesScore: rottenTomatoes.rottenTomatoesScore,
+    sourceLinks: [
+      {
+        label: 'IMDb source',
+        url: imdbUrl,
+        note: imdbId ? `IMDb title page for ${imdbId}.` : 'Search IMDb for the matching title page.',
+      },
+      {
+        label: 'Rotten Tomatoes reviews',
+        url: rottenTomatoes.rottenTomatoesUrl,
+        note: rottenTomatoes.rottenTomatoesScore
+          ? `Critic score surfaced from the search page: ${rottenTomatoes.rottenTomatoesScore}.`
+          : 'Search Rotten Tomatoes for critic and audience reviews.',
+      },
+    ],
+  };
+}
+
 async function searchTmdb(settings, kind, query) {
   const genreMap = await getGenreMap(settings, kind);
   const isSearch = query.trim().length > 0;
@@ -843,6 +997,35 @@ app.get('/api/feed', requireAuth(async (request, response) => {
   } catch (error) {
     response.status(502).json({
       message: error instanceof Error ? error.message : 'Unable to load the media catalog.',
+    });
+  }
+}));
+
+app.get('/api/feed/details', requireAuth(async (request, response) => {
+  const title = String(request.query.title ?? '').trim();
+  const kind = request.query.kind === 'movie' || request.query.kind === 'show' ? request.query.kind : '';
+  const year = Number(request.query.year ?? 0);
+
+  if (!title || !kind || !year) {
+    response.status(400).json({ message: 'Title, kind, and year are required.' });
+    return;
+  }
+
+  const item = {
+    title,
+    kind,
+    year,
+    summary: title,
+    tmdbId: request.query.tmdbId ? Number(request.query.tmdbId) : undefined,
+    tags: [],
+  };
+
+  try {
+    const details = await buildMediaDetails(item, request.store.settings);
+    response.json(details);
+  } catch (error) {
+    response.status(502).json({
+      message: error instanceof Error ? error.message : 'Unable to load media details.',
     });
   }
 }));

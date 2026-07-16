@@ -6,6 +6,7 @@ import {
   IntegrationHealthCheck,
   IntegrationSettings,
   MediaRequest,
+  MediaDetails,
   RequestLineItem,
   RequestStatus,
   UserAccount,
@@ -63,6 +64,33 @@ function filterFallbackFeed(query: string, kind: 'all' | 'movie' | 'show'): Feed
 
     return kindMatches && queryMatches;
   });
+}
+
+function buildFallbackMediaDetails(feedItem: FeedItem): MediaDetails {
+  const searchQuery = encodeURIComponent(`${feedItem.title} ${feedItem.year}`);
+
+  return {
+    title: feedItem.title,
+    kind: feedItem.kind,
+    year: feedItem.year,
+    overview: feedItem.summary,
+    genres: feedItem.tags.slice(0, 4),
+    cast: [],
+    imdbUrl: `https://www.imdb.com/find/?q=${searchQuery}`,
+    rottenTomatoesUrl: `https://www.rottentomatoes.com/search?search=${searchQuery}`,
+    sourceLinks: [
+      {
+        label: 'IMDb source',
+        url: `https://www.imdb.com/find/?q=${searchQuery}`,
+        note: 'Search IMDb for the matching title page.',
+      },
+      {
+        label: 'Rotten Tomatoes reviews',
+        url: `https://www.rottentomatoes.com/search?search=${searchQuery}`,
+        note: 'Open Rotten Tomatoes search results for review sourcing.',
+      },
+    ],
+  };
 }
 
 @Injectable({ providedIn: 'root' })
@@ -307,6 +335,27 @@ export class RequestStoreService {
     } catch {
       this.activateFallbackMode();
       return false;
+    }
+  }
+
+  async loadFeedItemDetails(feedItem: FeedItem): Promise<MediaDetails> {
+    const params = new URLSearchParams();
+    params.set('title', feedItem.title);
+    params.set('kind', feedItem.kind);
+    params.set('year', String(feedItem.year));
+    if (feedItem.tmdbId) {
+      params.set('tmdbId', String(feedItem.tmdbId));
+    }
+
+    try {
+      const result = await this.requestJson<MediaDetails>(`/api/feed/details?${params.toString()}`);
+      if (!result.ok || !result.data) {
+        throw new Error('Details request failed.');
+      }
+
+      return result.data;
+    } catch {
+      return buildFallbackMediaDetails(feedItem);
     }
   }
 

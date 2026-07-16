@@ -191,6 +191,42 @@ p {
   min-height: 7rem;
 }
 
+.password-field {
+  gap: 0.35rem;
+}
+
+.password-input-row {
+  position: relative;
+}
+
+.password-input-row input {
+  width: 100%;
+  padding-right: 3rem;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 0.85rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 999px;
+  color: #bfdbfe;
+  background: rgba(15, 23, 42, 0.55);
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  padding: 0;
+}
+
+.password-toggle svg {
+  width: 1rem;
+  height: 1rem;
+  fill: currentColor;
+}
+
 .grow {
   min-width: 0;
 }
@@ -199,6 +235,58 @@ p {
 .request-stack {
   display: grid;
   gap: 1rem;
+}
+
+.detail-card {
+  padding: 1.5rem;
+}
+
+.detail-metrics,
+.detail-links,
+.detail-sources {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.detail-metrics {
+  grid-auto-flow: column;
+  grid-auto-columns: max-content;
+  justify-content: start;
+  flex-wrap: wrap;
+  margin: 1rem 0;
+}
+
+.detail-sources {
+  margin: 1rem 0;
+}
+
+.source-group {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.9rem 1rem;
+  border-radius: 16px;
+  background: rgba(15, 23, 42, 0.55);
+  border: 1px solid rgba(71, 85, 105, 0.45);
+}
+
+.source-group a,
+.source-link {
+  color: #bfdbfe;
+}
+
+.source-link {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.9rem 1rem;
+  border-radius: 16px;
+  background: rgba(15, 23, 42, 0.45);
+  border: 1px solid rgba(71, 85, 105, 0.45);
+  text-decoration: none;
+}
+
+.source-link span {
+  color: #cbd5e1;
+  line-height: 1.5;
 }
 
 .login-card,
@@ -221,6 +309,10 @@ p {
   border: 1px solid rgba(71, 85, 105, 0.5);
 }
 
+.feed-card {
+  cursor: pointer;
+}
+
 .login-card {
   text-align: left;
   color: #f8fafc;
@@ -232,9 +324,14 @@ p {
 }
 
 .login-card.selected,
-.feed-card.selected {
+.feed-card.selected,
+.feed-card.active {
   border-color: rgba(96, 165, 250, 0.7);
   box-shadow: inset 0 0 0 1px rgba(96, 165, 250, 0.5);
+}
+
+.feed-card.active {
+  background: rgba(30, 41, 59, 0.78);
 }
 
 .feed-card-header {
@@ -361,9 +458,14 @@ p {
   .hero,
   .section-header,
   .feed-card-header,
-  .selection-item {
+  .selection-item,
+  .source-group {
     grid-template-columns: 1fr;
     display: grid;
+  }
+
+  .detail-metrics {
+    grid-auto-flow: row;
   }
 
   .filters {

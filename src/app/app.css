@@ -226,6 +226,11 @@ p {
   color: #f8fafc;
 }
 
+.login-card span {
+  color: #bfdbfe;
+  font-size: 0.9rem;
+}
+
 .login-card.selected,
 .feed-card.selected {
   border-color: rgba(96, 165, 250, 0.7);
@@ -315,6 +320,13 @@ p {
   color: #e2e8f0;
   display: grid;
   gap: 0.35rem;
+}
+
+.settings-grid {
+  display: grid;
+  gap: 0.85rem;
+  margin: 1rem 0;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
 }
 
 .empty-state {

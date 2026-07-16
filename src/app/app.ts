@@ -1,8 +1,8 @@
 import { DatePipe, TitleCasePipe } from '@angular/common';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
-import { FeedItem, RequestStatus, UserAccount } from './app.models';
+import { FeedItem, IntegrationSettings, RequestStatus, UserAccount } from './app.models';
 import { RequestStoreService } from './request-store.service';
 
 @Component({
@@ -14,13 +14,22 @@ import { RequestStoreService } from './request-store.service';
 export class App {
   private readonly requestStore = inject(RequestStoreService);
 
+  constructor() {
+    effect(() => {
+      this.settingsForm.set(this.requestStore.settings());
+    });
+  }
+
   protected readonly appName = 'Plex Request Hub';
   protected readonly users = this.requestStore.users;
   protected readonly currentUser = this.requestStore.currentUser;
   protected readonly currentUserRequests = this.requestStore.currentUserRequests;
   protected readonly pendingRequests = this.requestStore.pendingRequests;
   protected readonly selectedFeedItems = this.requestStore.selectedFeedItems;
-  protected readonly selectedLoginUserId = signal('requestor-1');
+  protected readonly usingFallbackData = this.requestStore.usingFallbackData;
+  protected readonly integrationHealth = this.requestStore.integrationHealth;
+  protected readonly savingSettings = this.requestStore.savingSettings;
+  protected readonly loginUsername = signal('requestor');
   protected readonly loginPassword = signal('');
   protected readonly loginError = signal('');
   protected readonly searchTerm = signal('');
@@ -28,29 +37,17 @@ export class App {
   protected readonly requestNote = signal('');
   protected readonly reviewNotes = signal<Record<string, string>>({});
   protected readonly submissionMessage = signal('');
+  protected readonly adminMessage = signal('');
+  protected readonly settingsForm = signal<IntegrationSettings>(this.requestStore.settings());
   protected readonly canRequest = computed(() => {
     const role = this.currentUser()?.role;
     return role === 'requestor' || role === 'admin';
   });
   protected readonly isAdmin = computed(() => this.currentUser()?.role === 'admin');
-  protected readonly filteredFeedItems = computed(() => {
-    const query = this.searchTerm().trim().toLowerCase();
-    const selectedKind = this.selectedKind();
+  protected readonly filteredFeedItems = computed(() => this.requestStore.feedItems());
 
-    return this.requestStore.feedItems().filter((item) => {
-      const kindMatches = selectedKind === 'all' || item.kind === selectedKind;
-      const queryMatches =
-        query.length === 0 ||
-        item.title.toLowerCase().includes(query) ||
-        item.feedName.toLowerCase().includes(query) ||
-        item.tags.some((tag) => tag.toLowerCase().includes(query));
-
-      return kindMatches && queryMatches;
-    });
-  });
-
-  protected selectLoginUser(userId: string): void {
-    this.selectedLoginUserId.set(userId);
+  protected selectLoginUser(username: string): void {
+    this.loginUsername.set(username);
     this.loginError.set('');
   }
 
@@ -59,10 +56,10 @@ export class App {
     this.loginError.set('');
   }
 
-  protected login(): void {
-    const loggedIn = this.requestStore.login(this.selectedLoginUserId(), this.loginPassword());
+  protected async login(): Promise<void> {
+    const loggedIn = await this.requestStore.login(this.loginUsername(), this.loginPassword());
     if (!loggedIn) {
-      this.loginError.set('Incorrect password for that account.');
+      this.loginError.set('Incorrect username or password.');
       return;
     }
 
@@ -70,22 +67,26 @@ export class App {
     this.loginError.set('');
     this.requestNote.set('');
     this.submissionMessage.set('');
+    this.settingsForm.set(this.requestStore.settings());
   }
 
-  protected logout(): void {
-    this.requestStore.logout();
+  protected async logout(): Promise<void> {
+    await this.requestStore.logout();
     this.requestNote.set('');
     this.submissionMessage.set('');
     this.loginPassword.set('');
     this.loginError.set('');
+    this.adminMessage.set('');
   }
 
   protected updateSearchTerm(value: string): void {
     this.searchTerm.set(value);
+    this.requestStore.searchFeedItems(value, this.selectedKind());
   }
 
   protected updateSelectedKind(value: 'all' | 'movie' | 'show'): void {
     this.selectedKind.set(value);
+    this.requestStore.searchFeedItems(this.searchTerm(), value);
   }
 
   protected isFeedItemSelected(feedItemId: string): boolean {
@@ -101,8 +102,8 @@ export class App {
     this.requestNote.set(value);
   }
 
-  protected submitRequest(): void {
-    const submitted = this.requestStore.submitRequest(this.requestNote());
+  protected async submitRequest(): Promise<void> {
+    const submitted = await this.requestStore.submitRequest(this.requestNote());
     if (!submitted) {
       return;
     }
@@ -118,9 +119,9 @@ export class App {
     }));
   }
 
-  protected reviewRequest(requestId: string, status: RequestStatus): void {
+  protected async reviewRequest(requestId: string, status: RequestStatus): Promise<void> {
     const reviewNote = this.reviewNotes()[requestId] ?? '';
-    const updated = this.requestStore.reviewRequest(requestId, status, reviewNote);
+    const updated = await this.requestStore.reviewRequest(requestId, status, reviewNote);
     if (!updated) {
       return;
     }
@@ -129,6 +130,38 @@ export class App {
       ...notes,
       [requestId]: '',
     }));
+
+    if (status === 'approved') {
+      this.adminMessage.set('Approval saved and fulfillment attempted in Radarr/Sonarr.');
+    }
+  }
+
+  protected updateSettingsField(section: keyof IntegrationSettings, key: string, value: string | boolean | number): void {
+    this.settingsForm.update((settings) => ({
+      ...settings,
+      [section]: {
+        ...settings[section],
+        [key]: value,
+      },
+    }));
+  }
+
+  protected updateSettingsNumberField(section: 'radarr' | 'sonarr', key: 'qualityProfileId' | 'languageProfileId', value: string): void {
+    const parsed = Number(value);
+    this.updateSettingsField(section, key, Number.isFinite(parsed) ? parsed : 1);
+  }
+
+  protected async saveAdminSettings(): Promise<void> {
+    const updated = await this.requestStore.saveSettings(this.settingsForm());
+    this.adminMessage.set(updated ? 'Integration settings saved.' : 'Unable to save integration settings.');
+    if (updated) {
+      this.settingsForm.set(this.requestStore.settings());
+    }
+  }
+
+  protected async runHealthCheck(): Promise<void> {
+    const ok = await this.requestStore.refreshIntegrationHealth();
+    this.adminMessage.set(ok ? 'Health check completed.' : 'Unable to run health check.');
   }
 
   protected trackById(_: number, item: FeedItem): string {

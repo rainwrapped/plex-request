@@ -6,7 +6,9 @@
   },
   "scripts": {
     "ng": "ng",
-    "start": "ng serve",
+    "start": "concurrently -k -n api,web \"npm:start:api\" \"npm:start:web\"",
+    "start:api": "node --watch server/index.mjs",
+    "start:web": "ng serve --port 4300 --proxy-config proxy.conf.json",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test"
@@ -20,13 +22,16 @@
     "@angular/forms": "^22.0.6",
     "@angular/platform-browser": "^22.0.6",
     "@angular/router": "^22.0.6",
+    "dotenv": "^17.2.2",
     "rxjs": "^7.8.2",
+    "express": "^5.1.0",
     "tslib": "^2.8.1"
   },
   "devDependencies": {
     "@angular/build": "^22.0.7",
     "@angular/cli": "^22.0.7",
     "@angular/compiler-cli": "^22.0.6",
+    "concurrently": "^9.2.1",
     "jsdom": "^29.1.1",
     "prettier": "^3.9.5",
     "typescript": "^6.0.3",

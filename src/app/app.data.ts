@@ -1,9 +1,9 @@
 import { FeedItem, MediaRequest, UserAccount } from './app.models';
 
 export const DEMO_USERS: UserAccount[] = [
-  { id: 'viewer-1', name: 'Avery Viewer', role: 'viewer', password: 'plex-demo' },
-  { id: 'requestor-1', name: 'Riley Requestor', role: 'requestor', password: 'plex-demo' },
-  { id: 'admin-1', name: 'Jordan Admin', role: 'admin', password: 'plex-demo' },
+  { id: 'viewer-1', username: 'viewer', name: 'Avery Viewer', role: 'viewer', password: 'plex-demo' },
+  { id: 'requestor-1', username: 'requestor', name: 'Riley Requestor', role: 'requestor', password: 'plex-demo' },
+  { id: 'admin-1', username: 'admin', name: 'Jordan Admin', role: 'admin', password: 'plex-demo' },
 ];
 
 export const FEED_ITEMS: FeedItem[] = [

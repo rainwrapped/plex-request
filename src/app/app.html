@@ -37,7 +37,7 @@
           <div>
             <p class="eyebrow">Demo access</p>
             <h2>Choose an account to log in</h2>
-            <p class="section-copy">Accounts stay separate now. Pick one role card and enter the demo password to continue.</p>
+            <p class="section-copy">Accounts stay separate now. Pick one role card and enter credentials to continue.</p>
           </div>
 
           <div class="account-grid">
@@ -45,28 +45,39 @@
               <button
                 type="button"
                 class="login-card"
-                [class.selected]="selectedLoginUserId() === user.id"
-                (click)="selectLoginUser(user.id)"
+                [class.selected]="loginUsername() === (user.username || user.id)"
+                (click)="selectLoginUser(user.username || user.id)"
               >
                 <strong>{{ user.name }}</strong>
                 <span>{{ user.role | titlecase }}</span>
+                <span>{{ user.username || user.id }}</span>
               </button>
             }
           </div>
 
           <label class="field">
-            <span>Demo password</span>
+            <span>Username</span>
+            <input
+              type="text"
+              [ngModel]="loginUsername()"
+              (ngModelChange)="selectLoginUser($event)"
+              placeholder="admin"
+            />
+          </label>
+
+          <label class="field">
+            <span>Password</span>
             <input
               type="password"
               [ngModel]="loginPassword()"
               (ngModelChange)="updateLoginPassword($event)"
-              placeholder="Use plex-demo"
+              placeholder="Enter account password"
             />
           </label>
 
           <div class="actions-row">
             <button type="button" class="action-button" (click)="login()">Log in</button>
-            <span class="detail-copy">Demo password: <strong>plex-demo</strong></span>
+            <span class="detail-copy">Default local seed password: <strong>plex-demo</strong></span>
           </div>
 
           @if (loginError()) {
@@ -76,6 +87,20 @@
       }
     </div>
   </header>
+
+  @if (usingFallbackData()) {
+    <section class="card auth-note">
+      <div class="section-header">
+        <div>
+          <p class="eyebrow">Demo mode</p>
+          <h2>Live providers are not configured yet</h2>
+        </div>
+      </div>
+      <p class="section-copy">
+        Add TMDb, Plex, Radarr, and Sonarr settings in the admin panel (or bootstrap from environment) to replace seeded demo behavior.
+      </p>
+    </section>
+  }
 
   @if (currentUser()) {
   <section class="workspace">
@@ -123,7 +148,12 @@
                 <h3>{{ item.title }}</h3>
                 <p>{{ item.feedName }}</p>
               </div>
-              <span class="badge">{{ item.kind | titlecase }} · {{ item.year }}</span>
+              <div class="badges">
+                <span class="badge">{{ item.kind | titlecase }} · {{ item.year }}</span>
+                @if (item.availability?.inPlex) {
+                  <span class="badge success">Already in Plex</span>
+                }
+              </div>
             </div>
 
             <p class="feed-summary">{{ item.summary }}</p>
@@ -138,10 +168,12 @@
               type="button"
               class="action-button"
               [class.secondary]="!isFeedItemSelected(item.id)"
-              [disabled]="!canRequest()"
+              [disabled]="!canRequest() || item.availability?.inPlex"
               (click)="toggleFeedItemSelection(item.id)"
             >
-              @if (!canRequest()) {
+              @if (item.availability?.inPlex) {
+                Already in Plex
+              } @else if (!canRequest()) {
                 Browsing only
               } @else if (isFeedItemSelected(item.id)) {
                 Remove from request
@@ -254,6 +286,22 @@
               @if (request.reviewNote) {
                 <p class="detail-copy"><strong>Admin note:</strong> {{ request.reviewNote }}</p>
               }
+
+              @if (request.fulfillmentStatus) {
+                <p class="detail-copy"><strong>Fulfillment:</strong> {{ request.fulfillmentStatus | titlecase }}</p>
+              }
+              @if (request.fulfillmentDetails?.length) {
+                <ul class="request-items">
+                  @for (detail of request.fulfillmentDetails; track detail.itemId + detail.target) {
+                    <li>
+                      {{ detail.itemTitle }} · {{ detail.target | titlecase }} · {{ detail.status | titlecase }}
+                      @if (detail.message) {
+                        - {{ detail.message }}
+                      }
+                    </li>
+                  }
+                </ul>
+              }
             </article>
           } @empty {
             <p class="empty-copy">No requests submitted from this account yet.</p>
@@ -313,11 +361,177 @@
                     Deny
                   </button>
                 </div>
+
+                @if (request.fulfillmentStatus) {
+                  <p class="detail-copy"><strong>Fulfillment:</strong> {{ request.fulfillmentStatus | titlecase }}</p>
+                }
               </article>
             } @empty {
               <p class="empty-copy">No pending requests need review right now.</p>
             }
           </div>
+        </section>
+
+        <section class="card">
+          <div class="section-header">
+            <div>
+              <p class="eyebrow">Admin integrations</p>
+              <h2>Providers and fulfillment settings</h2>
+            </div>
+          </div>
+
+          <div class="settings-grid">
+            <label class="field">
+              <span>TMDb API key</span>
+              <input
+                type="text"
+                [ngModel]="settingsForm().tmdb.apiKey"
+                (ngModelChange)="updateSettingsField('tmdb', 'apiKey', $event)"
+                placeholder="optional when read token is set"
+              />
+            </label>
+            <label class="field">
+              <span>TMDb read token</span>
+              <input
+                type="text"
+                [ngModel]="settingsForm().tmdb.readAccessToken"
+                (ngModelChange)="updateSettingsField('tmdb', 'readAccessToken', $event)"
+                placeholder="TMDb v4 token"
+              />
+            </label>
+            <label class="field">
+              <span>Plex base URL</span>
+              <input
+                type="text"
+                [ngModel]="settingsForm().plex.baseUrl"
+                (ngModelChange)="updateSettingsField('plex', 'baseUrl', $event)"
+                placeholder="http://127.0.0.1:32400"
+              />
+            </label>
+            <label class="field">
+              <span>Plex token</span>
+              <input
+                type="text"
+                [ngModel]="settingsForm().plex.token"
+                (ngModelChange)="updateSettingsField('plex', 'token', $event)"
+              />
+            </label>
+            <label class="field">
+              <span>Radarr enabled</span>
+              <select
+                [ngModel]="settingsForm().radarr.enabled"
+                (ngModelChange)="updateSettingsField('radarr', 'enabled', $event === true || $event === 'true')"
+              >
+                <option [ngValue]="true">Enabled</option>
+                <option [ngValue]="false">Disabled</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>Radarr base URL</span>
+              <input
+                type="text"
+                [ngModel]="settingsForm().radarr.baseUrl"
+                (ngModelChange)="updateSettingsField('radarr', 'baseUrl', $event)"
+              />
+            </label>
+            <label class="field">
+              <span>Radarr API key</span>
+              <input
+                type="text"
+                [ngModel]="settingsForm().radarr.apiKey"
+                (ngModelChange)="updateSettingsField('radarr', 'apiKey', $event)"
+              />
+            </label>
+            <label class="field">
+              <span>Radarr root folder</span>
+              <input
+                type="text"
+                [ngModel]="settingsForm().radarr.rootFolderPath"
+                (ngModelChange)="updateSettingsField('radarr', 'rootFolderPath', $event)"
+              />
+            </label>
+            <label class="field">
+              <span>Radarr quality profile</span>
+              <input
+                type="number"
+                [ngModel]="settingsForm().radarr.qualityProfileId"
+                (ngModelChange)="updateSettingsNumberField('radarr', 'qualityProfileId', $event)"
+              />
+            </label>
+            <label class="field">
+              <span>Sonarr enabled</span>
+              <select
+                [ngModel]="settingsForm().sonarr.enabled"
+                (ngModelChange)="updateSettingsField('sonarr', 'enabled', $event === true || $event === 'true')"
+              >
+                <option [ngValue]="true">Enabled</option>
+                <option [ngValue]="false">Disabled</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>Sonarr base URL</span>
+              <input
+                type="text"
+                [ngModel]="settingsForm().sonarr.baseUrl"
+                (ngModelChange)="updateSettingsField('sonarr', 'baseUrl', $event)"
+              />
+            </label>
+            <label class="field">
+              <span>Sonarr API key</span>
+              <input
+                type="text"
+                [ngModel]="settingsForm().sonarr.apiKey"
+                (ngModelChange)="updateSettingsField('sonarr', 'apiKey', $event)"
+              />
+            </label>
+            <label class="field">
+              <span>Sonarr root folder</span>
+              <input
+                type="text"
+                [ngModel]="settingsForm().sonarr.rootFolderPath"
+                (ngModelChange)="updateSettingsField('sonarr', 'rootFolderPath', $event)"
+              />
+            </label>
+            <label class="field">
+              <span>Sonarr quality profile</span>
+              <input
+                type="number"
+                [ngModel]="settingsForm().sonarr.qualityProfileId"
+                (ngModelChange)="updateSettingsNumberField('sonarr', 'qualityProfileId', $event)"
+              />
+            </label>
+            <label class="field">
+              <span>Sonarr language profile</span>
+              <input
+                type="number"
+                [ngModel]="settingsForm().sonarr.languageProfileId"
+                (ngModelChange)="updateSettingsNumberField('sonarr', 'languageProfileId', $event)"
+              />
+            </label>
+          </div>
+
+          <div class="actions-row">
+            <button type="button" class="action-button" [disabled]="savingSettings()" (click)="saveAdminSettings()">
+              Save settings
+            </button>
+            <button type="button" class="action-button secondary" (click)="runHealthCheck()">
+              Run health check
+            </button>
+          </div>
+
+          @if (adminMessage()) {
+            <p class="detail-copy">{{ adminMessage() }}</p>
+          }
+
+          @if (integrationHealth().length) {
+            <ul class="request-items">
+              @for (check of integrationHealth(); track check.name) {
+                <li>
+                  {{ check.name | titlecase }} · {{ check.ok ? 'Healthy' : 'Unhealthy' }} · {{ check.message }}
+                </li>
+              }
+            </ul>
+          }
         </section>
       }
     </aside>

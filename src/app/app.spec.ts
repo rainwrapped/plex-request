@@ -66,7 +66,7 @@ describe('App', () => {
     const fixture = TestBed.createComponent(App);
     fixture.componentInstance['selectLoginUser']('viewer-1');
     fixture.componentInstance['updateLoginPassword']('plex-demo');
-    fixture.componentInstance['login']();
+    await fixture.componentInstance['login']();
     fixture.detectChanges();
     await fixture.whenStable();
 
@@ -78,7 +78,7 @@ describe('App', () => {
     const fixture = TestBed.createComponent(App);
     fixture.componentInstance['selectLoginUser']('admin-1');
     fixture.componentInstance['updateLoginPassword']('plex-demo');
-    fixture.componentInstance['login']();
+    await fixture.componentInstance['login']();
     fixture.detectChanges();
     await fixture.whenStable();
 

@@ -1,0 +1,284 @@
+<main class="page-shell">
+  <header class="hero card">
+    <div>
+      <p class="eyebrow">Angular + TypeScript demo</p>
+      <h1>{{ appName }}</h1>
+      <p class="hero-copy">
+        Browse your configured feeds, queue multiple show and movie requests, and send them
+        to admins for approval before anything reaches Plex.
+      </p>
+    </div>
+
+    <div class="account-panel">
+      <label class="field">
+        <span>Active account</span>
+        <select
+          [ngModel]="currentUser().id"
+          (ngModelChange)="onUserChange($event)"
+          aria-label="Active account"
+        >
+          @for (user of users(); track user.id) {
+            <option [value]="user.id">{{ user.name }} · {{ user.role | titlecase }}</option>
+          }
+        </select>
+      </label>
+
+      <div class="badges">
+        <span class="badge role">{{ currentUser().role | titlecase }}</span>
+        @if (canRequest()) {
+          <span class="badge success">Can request</span>
+        } @else {
+          <span class="badge muted">Browse only</span>
+        }
+        @if (isAdmin()) {
+          <span class="badge warning">Approvals enabled</span>
+        }
+      </div>
+    </div>
+  </header>
+
+  <section class="workspace">
+    <section class="card catalog-panel">
+      <div class="section-header">
+        <div>
+          <p class="eyebrow">Feed search</p>
+          <h2>Search available movies and shows</h2>
+        </div>
+        <p class="section-copy">
+          Filter by title, source feed, or tags to build a multi-item request.
+        </p>
+      </div>
+
+      <div class="filters">
+        <label class="field grow">
+          <span>Search feeds</span>
+          <input
+            type="search"
+            [ngModel]="searchTerm()"
+            (ngModelChange)="updateSearchTerm($event)"
+            placeholder="Search titles, feed names, or tags"
+          />
+        </label>
+
+        <label class="field field-compact">
+          <span>Type</span>
+          <select
+            [ngModel]="selectedKind()"
+            (ngModelChange)="updateSelectedKind($event)"
+            aria-label="Media type"
+          >
+            <option value="all">All</option>
+            <option value="movie">Movies</option>
+            <option value="show">Shows</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="feed-grid">
+        @for (item of filteredFeedItems(); track trackById($index, item)) {
+          <article class="feed-card" [class.selected]="isFeedItemSelected(item.id)">
+            <div class="feed-card-header">
+              <div>
+                <h3>{{ item.title }}</h3>
+                <p>{{ item.feedName }}</p>
+              </div>
+              <span class="badge">{{ item.kind | titlecase }} · {{ item.year }}</span>
+            </div>
+
+            <p class="feed-summary">{{ item.summary }}</p>
+
+            <div class="tag-list">
+              @for (tag of item.tags; track tag) {
+                <span class="tag">{{ tag }}</span>
+              }
+            </div>
+
+            <button
+              type="button"
+              class="action-button"
+              [class.secondary]="!isFeedItemSelected(item.id)"
+              [disabled]="!canRequest()"
+              (click)="toggleFeedItemSelection(item.id)"
+            >
+              @if (!canRequest()) {
+                Browsing only
+              } @else if (isFeedItemSelected(item.id)) {
+                Remove from request
+              } @else {
+                Add to request
+              }
+            </button>
+          </article>
+        } @empty {
+          <div class="empty-state">
+            <h3>No feed matches found</h3>
+            <p>Try a broader title search or switch back to all media types.</p>
+          </div>
+        }
+      </div>
+    </section>
+
+    <aside class="sidebar">
+      <section class="card">
+        <div class="section-header">
+          <div>
+            <p class="eyebrow">Request basket</p>
+            <h2>Queue multiple items</h2>
+          </div>
+        </div>
+
+        @if (canRequest()) {
+          <p class="section-copy">
+            Select one or more items from the feed list, add an optional note, then submit the
+            batch for admin approval.
+          </p>
+
+          <div class="selection-list">
+            @for (item of selectedFeedItems(); track item.id) {
+              <div class="selection-item">
+                <div>
+                  <strong>{{ item.title }}</strong>
+                  <p>{{ item.kind | titlecase }} · {{ item.feedName }}</p>
+                </div>
+                <button type="button" class="inline-button" (click)="toggleFeedItemSelection(item.id)">
+                  Remove
+                </button>
+              </div>
+            } @empty {
+              <p class="empty-copy">No items selected yet.</p>
+            }
+          </div>
+
+          <label class="field">
+            <span>Request note</span>
+            <textarea
+              rows="4"
+              [ngModel]="requestNote()"
+              (ngModelChange)="updateRequestNote($event)"
+              placeholder="Optional context for the admin queue"
+            ></textarea>
+          </label>
+
+          <button
+            type="button"
+            class="action-button"
+            [disabled]="selectedFeedItems().length === 0"
+            (click)="submitRequest()"
+          >
+            Submit {{ selectedFeedItems().length }} item request
+          </button>
+
+          @if (submissionMessage()) {
+            <p class="success-copy">{{ submissionMessage() }}</p>
+          }
+        } @else {
+          <p class="section-copy">
+            View-only accounts can search feeds and track the request workflow, but they cannot
+            create new requests.
+          </p>
+        }
+      </section>
+
+      <section class="card">
+        <div class="section-header">
+          <div>
+            <p class="eyebrow">Request history</p>
+            <h2>My submitted requests</h2>
+          </div>
+        </div>
+
+        <div class="request-stack">
+          @for (request of currentUserRequests(); track request.id) {
+            <article class="request-card">
+              <div class="feed-card-header">
+                <div>
+                  <h3>{{ request.items.length }} item request</h3>
+                  <p>{{ request.requestedAt | date: 'medium' }}</p>
+                </div>
+                <span class="badge" [class.status-approved]="request.status === 'approved'"
+                  [class.status-denied]="request.status === 'denied'">{{ request.status | titlecase }}</span
+                >
+              </div>
+
+              <ul class="request-items">
+                @for (item of request.items; track item.id) {
+                  <li>{{ item.title }} · {{ item.kind | titlecase }} · {{ item.feedName }}</li>
+                }
+              </ul>
+
+              @if (request.requestNote) {
+                <p class="detail-copy"><strong>Request note:</strong> {{ request.requestNote }}</p>
+              }
+
+              @if (request.reviewNote) {
+                <p class="detail-copy"><strong>Admin note:</strong> {{ request.reviewNote }}</p>
+              }
+            </article>
+          } @empty {
+            <p class="empty-copy">No requests submitted from this account yet.</p>
+          }
+        </div>
+      </section>
+
+      @if (isAdmin()) {
+        <section class="card">
+          <div class="section-header">
+            <div>
+              <p class="eyebrow">Admin approvals</p>
+              <h2>Pending review queue</h2>
+            </div>
+          </div>
+
+          <div class="request-stack">
+            @for (request of pendingRequests(); track request.id) {
+              <article class="request-card">
+                <div class="feed-card-header">
+                  <div>
+                    <h3>{{ request.items.length }} item request</h3>
+                    <p>{{ request.requestedAt | date: 'medium' }}</p>
+                  </div>
+                  <span class="badge warning">Pending</span>
+                </div>
+
+                <ul class="request-items">
+                  @for (item of request.items; track item.id) {
+                    <li>{{ item.title }} · {{ item.kind | titlecase }} · {{ item.feedName }}</li>
+                  }
+                </ul>
+
+                @if (request.requestNote) {
+                  <p class="detail-copy"><strong>Requester note:</strong> {{ request.requestNote }}</p>
+                }
+
+                <label class="field">
+                  <span>Admin note</span>
+                  <textarea
+                    rows="3"
+                    [ngModel]="reviewNotes()[request.id] ?? ''"
+                    (ngModelChange)="updateReviewNote(request.id, $event)"
+                    placeholder="Optional approval or denial context"
+                  ></textarea>
+                </label>
+
+                <div class="actions-row">
+                  <button type="button" class="action-button" (click)="reviewRequest(request.id, 'approved')">
+                    Approve
+                  </button>
+                  <button
+                    type="button"
+                    class="action-button danger"
+                    (click)="reviewRequest(request.id, 'denied')"
+                  >
+                    Deny
+                  </button>
+                </div>
+              </article>
+            } @empty {
+              <p class="empty-copy">No pending requests need review right now.</p>
+            }
+          </div>
+        </section>
+      }
+    </aside>
+  </section>
+</main>

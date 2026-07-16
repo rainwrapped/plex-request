@@ -4,7 +4,7 @@ import { DEMO_USERS, FEED_ITEMS, SEEDED_REQUESTS } from './app.data';
 import { FeedItem, MediaRequest, RequestLineItem, RequestStatus, UserAccount } from './app.models';
 
 interface StoredAppState {
-  currentUserId: string;
+  currentUserId: string | null;
   requests: MediaRequest[];
 }
 
@@ -14,12 +14,12 @@ const STORAGE_KEY = 'plex-request-hub-state';
 export class RequestStoreService {
   readonly users = signal<UserAccount[]>(DEMO_USERS);
   readonly feedItems = signal<FeedItem[]>(FEED_ITEMS);
-  readonly currentUserId = signal<string>('requestor-1');
+  readonly currentUserId = signal<string | null>(null);
   readonly selectedFeedItemIds = signal<string[]>([]);
   readonly requests = signal<MediaRequest[]>(SEEDED_REQUESTS);
 
   readonly currentUser = computed(
-    () => this.users().find((user) => user.id === this.currentUserId()) ?? this.users()[0],
+    () => this.users().find((user) => user.id === this.currentUserId()) ?? null,
   );
   readonly selectedFeedItems = computed(() => {
     const selectedIds = new Set(this.selectedFeedItemIds());
@@ -27,6 +27,10 @@ export class RequestStoreService {
   });
   readonly currentUserRequests = computed(() => {
     const currentUser = this.currentUser();
+    if (!currentUser) {
+      return [];
+    }
+
     return this.requests().filter((request) => request.requestedByUserId === currentUser.id);
   });
   readonly pendingRequests = computed(() =>
@@ -40,13 +44,24 @@ export class RequestStoreService {
     });
   }
 
-  setCurrentUser(userId: string): void {
+  login(userId: string, password: string): boolean {
+    const user = this.users().find((candidate) => candidate.id === userId);
+    if (!user || user.password !== password.trim()) {
+      return false;
+    }
+
     this.currentUserId.set(userId);
+    this.selectedFeedItemIds.set([]);
+    return true;
+  }
+
+  logout(): void {
+    this.currentUserId.set(null);
     this.selectedFeedItemIds.set([]);
   }
 
   toggleFeedItemSelection(feedItemId: string): void {
-    if (this.currentUser().role === 'viewer') {
+    if (!this.currentUser() || this.currentUser()?.role === 'viewer') {
       return;
     }
 
@@ -61,7 +76,7 @@ export class RequestStoreService {
     const currentUser = this.currentUser();
     const selectedItems = this.selectedFeedItems();
 
-    if (currentUser.role === 'viewer' || selectedItems.length === 0) {
+    if (!currentUser || currentUser.role === 'viewer' || selectedItems.length === 0) {
       return false;
     }
 
@@ -91,7 +106,7 @@ export class RequestStoreService {
   reviewRequest(requestId: string, status: RequestStatus, reviewNote: string): boolean {
     const reviewer = this.currentUser();
 
-    if (reviewer.role !== 'admin' || status === 'pending') {
+    if (!reviewer || reviewer.role !== 'admin' || status === 'pending') {
       return false;
     }
 
@@ -123,7 +138,7 @@ export class RequestStoreService {
     }
 
     const userExists = this.users().some((user) => user.id === savedState.currentUserId);
-    if (userExists) {
+    if (savedState.currentUserId && userExists) {
       this.currentUserId.set(savedState.currentUserId);
     }
 

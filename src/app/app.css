@@ -69,6 +69,11 @@ p {
   min-width: min(100%, 320px);
 }
 
+.session-panel {
+  display: grid;
+  gap: 1rem;
+}
+
 .section-header {
   display: flex;
   justify-content: space-between;
@@ -77,7 +82,8 @@ p {
 }
 
 .catalog-panel,
-.sidebar .card {
+.sidebar .card,
+.auth-note {
   padding: 1.5rem;
 }
 
@@ -95,6 +101,12 @@ p {
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
+}
+
+.account-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
 }
 
 .badge,
@@ -189,20 +201,32 @@ p {
   gap: 1rem;
 }
 
+.login-card,
+.feed-card,
+.request-card {
+  border-radius: 20px;
+}
+
 .feed-grid {
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
 }
 
+.login-card,
 .feed-card,
 .request-card {
   display: grid;
   gap: 1rem;
   padding: 1.25rem;
-  border-radius: 20px;
   background: rgba(15, 23, 42, 0.6);
   border: 1px solid rgba(71, 85, 105, 0.5);
 }
 
+.login-card {
+  text-align: left;
+  color: #f8fafc;
+}
+
+.login-card.selected,
 .feed-card.selected {
   border-color: rgba(96, 165, 250, 0.7);
   box-shadow: inset 0 0 0 1px rgba(96, 165, 250, 0.5);
@@ -305,6 +329,10 @@ p {
   color: #86efac;
   font-weight: 600;
   margin-top: 0.75rem;
+}
+
+.error-copy {
+  color: #fda4af;
 }
 
 @media (max-width: 1080px) {

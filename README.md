@@ -8,7 +8,7 @@ to Plex.
 
 - Search across configured feed entries by title, source feed, or tags
 - Submit multiple movies and shows in a single request
-- Switch between demo account roles:
+- Log in to separate demo account roles:
   - **View-only**: browse feeds without requesting
   - **Requestor**: build and submit request batches
   - **Admin**: review pending requests and approve or deny them
@@ -21,6 +21,7 @@ The app currently ships with seeded in-browser demo accounts and sample feed dat
 - `Avery Viewer` — view-only access
 - `Riley Requestor` — can submit requests
 - `Jordan Admin` — can approve or deny pending requests
+- Shared demo password: `plex-demo`
 
 ## Local development
 

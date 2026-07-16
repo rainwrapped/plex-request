@@ -8,6 +8,7 @@ export interface UserAccount {
   id: string;
   name: string;
   role: AccountRole;
+  password: string;
 }
 
 export interface FeedItem {

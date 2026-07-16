@@ -10,33 +10,74 @@
     </div>
 
     <div class="account-panel">
-      <label class="field">
-        <span>Active account</span>
-        <select
-          [ngModel]="currentUser().id"
-          (ngModelChange)="onUserChange($event)"
-          aria-label="Active account"
-        >
-          @for (user of users(); track user.id) {
-            <option [value]="user.id">{{ user.name }} · {{ user.role | titlecase }}</option>
-          }
-        </select>
-      </label>
+      @if (currentUser(); as user) {
+        <div class="session-panel">
+          <div>
+            <p class="eyebrow">Signed in</p>
+            <h2>{{ user.name }}</h2>
+            <p class="section-copy">Use the request workspace tied to this account, or sign out to switch users.</p>
+          </div>
 
-      <div class="badges">
-        <span class="badge role">{{ currentUser().role | titlecase }}</span>
-        @if (canRequest()) {
-          <span class="badge success">Can request</span>
-        } @else {
-          <span class="badge muted">Browse only</span>
-        }
-        @if (isAdmin()) {
-          <span class="badge warning">Approvals enabled</span>
-        }
-      </div>
+          <div class="badges">
+            <span class="badge role">{{ user.role | titlecase }}</span>
+            @if (canRequest()) {
+              <span class="badge success">Can request</span>
+            } @else {
+              <span class="badge muted">Browse only</span>
+            }
+            @if (isAdmin()) {
+              <span class="badge warning">Approvals enabled</span>
+            }
+          </div>
+
+          <button type="button" class="action-button secondary" (click)="logout()">Sign out</button>
+        </div>
+      } @else {
+        <div class="session-panel">
+          <div>
+            <p class="eyebrow">Demo access</p>
+            <h2>Choose an account to log in</h2>
+            <p class="section-copy">Accounts stay separate now. Pick one role card and enter the demo password to continue.</p>
+          </div>
+
+          <div class="account-grid">
+            @for (user of users(); track trackUserById($index, user)) {
+              <button
+                type="button"
+                class="login-card"
+                [class.selected]="selectedLoginUserId() === user.id"
+                (click)="selectLoginUser(user.id)"
+              >
+                <strong>{{ user.name }}</strong>
+                <span>{{ user.role | titlecase }}</span>
+              </button>
+            }
+          </div>
+
+          <label class="field">
+            <span>Demo password</span>
+            <input
+              type="password"
+              [ngModel]="loginPassword()"
+              (ngModelChange)="updateLoginPassword($event)"
+              placeholder="Use plex-demo"
+            />
+          </label>
+
+          <div class="actions-row">
+            <button type="button" class="action-button" (click)="login()">Log in</button>
+            <span class="detail-copy">Demo password: <strong>plex-demo</strong></span>
+          </div>
+
+          @if (loginError()) {
+            <p class="detail-copy error-copy">{{ loginError() }}</p>
+          }
+        </div>
+      }
     </div>
   </header>
 
+  @if (currentUser()) {
   <section class="workspace">
     <section class="card catalog-panel">
       <div class="section-header">
@@ -281,4 +322,17 @@
       }
     </aside>
   </section>
+  } @else {
+    <section class="card auth-note">
+      <div class="section-header">
+        <div>
+          <p class="eyebrow">Authentication required</p>
+          <h2>Log in to browse feeds and submit requests</h2>
+        </div>
+      </div>
+      <p class="section-copy">
+        This demo now keeps viewer, requestor, and admin sessions separate instead of letting one browser tab switch roles from a dropdown.
+      </p>
+    </section>
+  }
 </main>

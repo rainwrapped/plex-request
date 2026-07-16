@@ -1,3 +1,11 @@
+/**
+ * Canonical domain models shared between the Angular client and the Node API.
+ *
+ * The client imports these types directly. The server is plain ESM and does not
+ * consume the types at runtime, but this file remains the single source of truth
+ * for the API contract so both sides stay in sync as the app grows.
+ */
+
 export type AccountRole = 'viewer' | 'requestor' | 'admin';
 
 export type MediaKind = 'movie' | 'show';
@@ -62,6 +70,16 @@ export interface RequestLineItem {
   tmdbId?: number;
 }
 
+export type FulfillmentStatus = 'queued' | 'partial' | 'failed';
+
+export interface FulfillmentDetail {
+  itemId: string;
+  itemTitle: string;
+  target: 'radarr' | 'sonarr';
+  status: 'queued' | 'failed' | 'skipped';
+  message: string;
+}
+
 export interface MediaRequest {
   id: string;
   requestedByUserId: string;
@@ -72,16 +90,20 @@ export interface MediaRequest {
   reviewedByUserId?: string;
   reviewedAt?: string;
   reviewNote?: string;
-  fulfillmentStatus?: 'queued' | 'partial' | 'failed';
+  fulfillmentStatus?: FulfillmentStatus;
   fulfillmentDetails?: FulfillmentDetail[];
 }
 
-export interface FulfillmentDetail {
-  itemId: string;
-  itemTitle: string;
-  target: 'radarr' | 'sonarr';
-  status: 'queued' | 'failed' | 'skipped';
-  message: string;
+export interface ServiceSettings {
+  enabled: boolean;
+  baseUrl: string;
+  apiKey: string;
+  rootFolderPath: string;
+  qualityProfileId: number;
+}
+
+export interface SonarrSettings extends ServiceSettings {
+  languageProfileId: number;
 }
 
 export interface IntegrationSettings {
@@ -94,25 +116,16 @@ export interface IntegrationSettings {
     apiKey: string;
     readAccessToken: string;
   };
-  radarr: {
-    enabled: boolean;
-    baseUrl: string;
-    apiKey: string;
-    rootFolderPath: string;
-    qualityProfileId: number;
-  };
-  sonarr: {
-    enabled: boolean;
-    baseUrl: string;
-    apiKey: string;
-    rootFolderPath: string;
-    qualityProfileId: number;
-    languageProfileId: number;
-  };
+  radarr: ServiceSettings;
+  sonarr: SonarrSettings;
 }
 
+export type IntegrationName = 'tmdb' | 'plex' | 'radarr' | 'sonarr';
+
 export interface IntegrationHealthCheck {
-  name: 'tmdb' | 'plex' | 'radarr' | 'sonarr';
+  name: IntegrationName;
   ok: boolean;
   message: string;
 }
+
+export type MediaKindFilter = 'all' | MediaKind;

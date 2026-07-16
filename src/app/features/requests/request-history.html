@@ -1,0 +1,59 @@
+<section class="card">
+  <div class="section-header">
+    <div>
+      <p class="eyebrow">Request history</p>
+      <h2>My submitted requests</h2>
+    </div>
+  </div>
+
+  <div class="request-stack">
+    @for (request of currentUserRequests(); track request.id) {
+      <article class="request-card">
+        <div class="feed-card-header">
+          <div>
+            <h3>{{ request.items.length }} item request</h3>
+            <p>{{ request.requestedAt | date: 'medium' }}</p>
+          </div>
+          <span
+            class="badge"
+            [class.status-approved]="request.status === 'approved'"
+            [class.status-denied]="request.status === 'denied'"
+            >{{ request.status | titlecase }}</span
+          >
+        </div>
+
+        <ul class="request-items">
+          @for (item of request.items; track item.id) {
+            <li>{{ item.title }} · {{ item.kind | titlecase }} · {{ item.feedName }}</li>
+          }
+        </ul>
+
+        @if (request.requestNote) {
+          <p class="detail-copy"><strong>Request note:</strong> {{ request.requestNote }}</p>
+        }
+
+        @if (request.reviewNote) {
+          <p class="detail-copy"><strong>Admin note:</strong> {{ request.reviewNote }}</p>
+        }
+
+        @if (request.fulfillmentStatus) {
+          <p class="detail-copy"><strong>Fulfillment:</strong> {{ request.fulfillmentStatus | titlecase }}</p>
+        }
+        @if (request.fulfillmentDetails?.length) {
+          <ul class="request-items">
+            @for (detail of request.fulfillmentDetails; track detail.itemId + detail.target) {
+              <li>
+                {{ detail.itemTitle }} · {{ detail.target | titlecase }} · {{ detail.status | titlecase }}
+                @if (detail.message) {
+                  - {{ detail.message }}
+                }
+              </li>
+            }
+          </ul>
+        }
+      </article>
+    } @empty {
+      <p class="empty-copy">No requests submitted from this account yet.</p>
+    }
+  </div>
+</section>

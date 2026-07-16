@@ -1,12 +1,13 @@
-import { FeedItem, MediaRequest, UserAccount } from './app.models';
+/**
+ * Canonical seed catalog shared by the Angular client (offline fallback) and the
+ * Node API (persistent store seeding). Keeping this data in one plain-ESM module
+ * prevents the two sides from drifting apart as titles are added or changed.
+ *
+ * Secrets (passwords / hashes) intentionally live with each consumer, not here.
+ */
 
-export const DEMO_USERS: UserAccount[] = [
-  { id: 'viewer-1', username: 'viewer', name: 'Avery Viewer', role: 'viewer', password: 'plex-demo' },
-  { id: 'requestor-1', username: 'requestor', name: 'Riley Requestor', role: 'requestor', password: 'plex-demo' },
-  { id: 'admin-1', username: 'admin', name: 'Jordan Admin', role: 'admin', password: 'plex-demo' },
-];
-
-export const FEED_ITEMS: FeedItem[] = [
+/** @type {import('./catalog.d.mts').SeedFeedItem[]} */
+export const FEED_ITEMS = [
   {
     id: 'feed-1',
     title: 'Severance',
@@ -24,6 +25,7 @@ export const FEED_ITEMS: FeedItem[] = [
     feedName: '4K Movie Feed',
     summary: 'Recent blockbuster release sourced from a premium movie feed.',
     tags: ['4k', 'action', 'popular'],
+    tmdbId: 693134,
   },
   {
     id: 'feed-3',
@@ -42,6 +44,7 @@ export const FEED_ITEMS: FeedItem[] = [
     feedName: 'Animated Features Feed',
     summary: 'Animated feature catalog feed with family-friendly titles.',
     tags: ['animation', 'family', 'featured'],
+    tmdbId: 569094,
   },
   {
     id: 'feed-5',
@@ -51,6 +54,7 @@ export const FEED_ITEMS: FeedItem[] = [
     feedName: 'Apple TV+ Highlights',
     summary: 'Post-apocalyptic mystery series frequently requested by sci-fi fans.',
     tags: ['mystery', 'sci-fi'],
+    tmdbId: 125988,
   },
   {
     id: 'feed-6',
@@ -63,7 +67,8 @@ export const FEED_ITEMS: FeedItem[] = [
   },
 ];
 
-export const SEEDED_REQUESTS: MediaRequest[] = [
+/** @type {import('./catalog.d.mts').SeedRequest[]} */
+export const SEEDED_REQUESTS = [
   {
     id: 'request-1001',
     requestedByUserId: 'requestor-1',
@@ -77,6 +82,7 @@ export const SEEDED_REQUESTS: MediaRequest[] = [
         kind: 'movie',
         year: 2024,
         feedName: '4K Movie Feed',
+        tmdbId: 693134,
       },
       {
         id: 'feed-5',
@@ -84,6 +90,7 @@ export const SEEDED_REQUESTS: MediaRequest[] = [
         kind: 'show',
         year: 2023,
         feedName: 'Apple TV+ Highlights',
+        tmdbId: 125988,
       },
     ],
   },
@@ -96,6 +103,16 @@ export const SEEDED_REQUESTS: MediaRequest[] = [
     reviewedByUserId: 'admin-1',
     reviewedAt: '2026-07-08T12:15:00.000Z',
     reviewNote: 'Approved and queued for the next sync window.',
+    fulfillmentStatus: 'partial',
+    fulfillmentDetails: [
+      {
+        itemId: 'feed-4',
+        itemTitle: 'Spider-Man: Across the Spider-Verse',
+        target: 'radarr',
+        status: 'failed',
+        message: 'Downloader was not configured when this request was approved.',
+      },
+    ],
     items: [
       {
         id: 'feed-4',
@@ -103,7 +120,18 @@ export const SEEDED_REQUESTS: MediaRequest[] = [
         kind: 'movie',
         year: 2023,
         feedName: 'Animated Features Feed',
+        tmdbId: 569094,
       },
     ],
   },
 ];
+
+/** @type {import('./catalog.d.mts').DemoAccount[]} */
+export const DEMO_ACCOUNTS = [
+  { id: 'viewer-1', username: 'viewer', name: 'Avery Viewer', role: 'viewer' },
+  { id: 'requestor-1', username: 'requestor', name: 'Riley Requestor', role: 'requestor' },
+  { id: 'admin-1', username: 'admin', name: 'Jordan Admin', role: 'admin' },
+];
+
+/** Default password applied to the seeded demo accounts. */
+export const DEMO_PASSWORD = 'plex-demo';

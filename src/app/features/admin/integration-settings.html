@@ -1,0 +1,155 @@
+<section class="card">
+  <div class="section-header">
+    <div>
+      <p class="eyebrow">Admin integrations</p>
+      <h2>Providers and fulfillment settings</h2>
+    </div>
+  </div>
+
+  <div class="settings-grid">
+    <label class="field">
+      <span>TMDb API key</span>
+      <input
+        type="text"
+        [ngModel]="settingsForm().tmdb.apiKey"
+        (ngModelChange)="updateSettingsField('tmdb', 'apiKey', $event)"
+        placeholder="optional when read token is set"
+      />
+    </label>
+    <label class="field">
+      <span>TMDb read token</span>
+      <input
+        type="text"
+        [ngModel]="settingsForm().tmdb.readAccessToken"
+        (ngModelChange)="updateSettingsField('tmdb', 'readAccessToken', $event)"
+        placeholder="TMDb v4 token"
+      />
+    </label>
+    <label class="field">
+      <span>Plex base URL</span>
+      <input
+        type="text"
+        [ngModel]="settingsForm().plex.baseUrl"
+        (ngModelChange)="updateSettingsField('plex', 'baseUrl', $event)"
+        placeholder="http://127.0.0.1:32400"
+      />
+    </label>
+    <label class="field">
+      <span>Plex token</span>
+      <input
+        type="text"
+        [ngModel]="settingsForm().plex.token"
+        (ngModelChange)="updateSettingsField('plex', 'token', $event)"
+      />
+    </label>
+    <label class="field">
+      <span>Radarr enabled</span>
+      <select
+        [ngModel]="settingsForm().radarr.enabled"
+        (ngModelChange)="updateSettingsField('radarr', 'enabled', $event === true || $event === 'true')"
+      >
+        <option [ngValue]="true">Enabled</option>
+        <option [ngValue]="false">Disabled</option>
+      </select>
+    </label>
+    <label class="field">
+      <span>Radarr base URL</span>
+      <input
+        type="text"
+        [ngModel]="settingsForm().radarr.baseUrl"
+        (ngModelChange)="updateSettingsField('radarr', 'baseUrl', $event)"
+      />
+    </label>
+    <label class="field">
+      <span>Radarr API key</span>
+      <input
+        type="text"
+        [ngModel]="settingsForm().radarr.apiKey"
+        (ngModelChange)="updateSettingsField('radarr', 'apiKey', $event)"
+      />
+    </label>
+    <label class="field">
+      <span>Radarr root folder</span>
+      <input
+        type="text"
+        [ngModel]="settingsForm().radarr.rootFolderPath"
+        (ngModelChange)="updateSettingsField('radarr', 'rootFolderPath', $event)"
+      />
+    </label>
+    <label class="field">
+      <span>Radarr quality profile</span>
+      <input
+        type="number"
+        [ngModel]="settingsForm().radarr.qualityProfileId"
+        (ngModelChange)="updateSettingsNumberField('radarr', 'qualityProfileId', $event)"
+      />
+    </label>
+    <label class="field">
+      <span>Sonarr enabled</span>
+      <select
+        [ngModel]="settingsForm().sonarr.enabled"
+        (ngModelChange)="updateSettingsField('sonarr', 'enabled', $event === true || $event === 'true')"
+      >
+        <option [ngValue]="true">Enabled</option>
+        <option [ngValue]="false">Disabled</option>
+      </select>
+    </label>
+    <label class="field">
+      <span>Sonarr base URL</span>
+      <input
+        type="text"
+        [ngModel]="settingsForm().sonarr.baseUrl"
+        (ngModelChange)="updateSettingsField('sonarr', 'baseUrl', $event)"
+      />
+    </label>
+    <label class="field">
+      <span>Sonarr API key</span>
+      <input
+        type="text"
+        [ngModel]="settingsForm().sonarr.apiKey"
+        (ngModelChange)="updateSettingsField('sonarr', 'apiKey', $event)"
+      />
+    </label>
+    <label class="field">
+      <span>Sonarr root folder</span>
+      <input
+        type="text"
+        [ngModel]="settingsForm().sonarr.rootFolderPath"
+        (ngModelChange)="updateSettingsField('sonarr', 'rootFolderPath', $event)"
+      />
+    </label>
+    <label class="field">
+      <span>Sonarr quality profile</span>
+      <input
+        type="number"
+        [ngModel]="settingsForm().sonarr.qualityProfileId"
+        (ngModelChange)="updateSettingsNumberField('sonarr', 'qualityProfileId', $event)"
+      />
+    </label>
+    <label class="field">
+      <span>Sonarr language profile</span>
+      <input
+        type="number"
+        [ngModel]="settingsForm().sonarr.languageProfileId"
+        (ngModelChange)="updateSettingsNumberField('sonarr', 'languageProfileId', $event)"
+      />
+    </label>
+  </div>
+
+  <div class="actions-row">
+    <button type="button" class="action-button" [disabled]="savingSettings()" (click)="save()">Save settings</button>
+    <button type="button" class="action-button secondary" (click)="runHealthCheck()">Run health check</button>
+  </div>
+
+  @if (adminMessage()) {
+    <p class="detail-copy">{{ adminMessage() }}</p>
+  }
+
+  @if (integrationHealth().length) {
+    <ul class="request-items">
+      @for (check of integrationHealth(); track check.name) {
+        <li>{{ check.name | titlecase }} · {{ check.ok ? 'Healthy' : 'Unhealthy' }} · {{ check.message }}</li>
+      }
+    </ul>
+  }
+</section>

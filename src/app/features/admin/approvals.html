@@ -1,0 +1,57 @@
+<section class="card">
+  <div class="section-header">
+    <div>
+      <p class="eyebrow">Admin approvals</p>
+      <h2>Pending review queue</h2>
+    </div>
+  </div>
+
+  <div class="request-stack">
+    @for (request of pendingRequests(); track request.id) {
+      <article class="request-card">
+        <div class="feed-card-header">
+          <div>
+            <h3>{{ request.items.length }} item request</h3>
+            <p>{{ request.requestedAt | date: 'medium' }}</p>
+          </div>
+          <span class="badge warning">Pending</span>
+        </div>
+
+        <ul class="request-items">
+          @for (item of request.items; track item.id) {
+            <li>{{ item.title }} · {{ item.kind | titlecase }} · {{ item.feedName }}</li>
+          }
+        </ul>
+
+        @if (request.requestNote) {
+          <p class="detail-copy"><strong>Requester note:</strong> {{ request.requestNote }}</p>
+        }
+
+        <label class="field">
+          <span>Admin note</span>
+          <textarea
+            rows="3"
+            [ngModel]="reviewNotes()[request.id] ?? ''"
+            (ngModelChange)="updateReviewNote(request.id, $event)"
+            placeholder="Optional approval or denial context"
+          ></textarea>
+        </label>
+
+        <div class="actions-row">
+          <button type="button" class="action-button" (click)="review(request.id, 'approved')">Approve</button>
+          <button type="button" class="action-button danger" (click)="review(request.id, 'denied')">Deny</button>
+        </div>
+
+        @if (request.fulfillmentStatus) {
+          <p class="detail-copy"><strong>Fulfillment:</strong> {{ request.fulfillmentStatus | titlecase }}</p>
+        }
+      </article>
+    } @empty {
+      <p class="empty-copy">No pending requests need review right now.</p>
+    }
+  </div>
+
+  @if (adminMessage()) {
+    <p class="detail-copy">{{ adminMessage() }}</p>
+  }
+</section>

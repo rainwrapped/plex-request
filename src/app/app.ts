@@ -1,211 +1,32 @@
-import { DatePipe, TitleCasePipe } from '@angular/common';
-import { Component, computed, effect, inject, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { TitleCasePipe } from '@angular/common';
+import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 
-import { FeedItem, IntegrationSettings, MediaDetails, RequestStatus, UserAccount } from './app.models';
-import { RequestStoreService } from './request-store.service';
+import { ApiService } from './core/api/api.service';
+import { AuthStore } from './core/state/auth.store';
+import { SessionFacade } from './core/state/session.facade';
 
 @Component({
   selector: 'app-root',
-  imports: [FormsModule, DatePipe, TitleCasePipe],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, TitleCasePipe],
   templateUrl: './app.html',
   styleUrl: './app.css',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class App {
-  private readonly requestStore = inject(RequestStoreService);
-
-  constructor() {
-    effect(() => {
-      this.settingsForm.set(this.requestStore.settings());
-    });
-  }
+  private readonly session = inject(SessionFacade);
+  private readonly auth = inject(AuthStore);
+  private readonly api = inject(ApiService);
+  private readonly router = inject(Router);
 
   protected readonly appName = 'Plex Request Hub';
-  protected readonly users = this.requestStore.users;
-  protected readonly currentUser = this.requestStore.currentUser;
-  protected readonly currentUserRequests = this.requestStore.currentUserRequests;
-  protected readonly pendingRequests = this.requestStore.pendingRequests;
-  protected readonly selectedFeedItems = this.requestStore.selectedFeedItems;
-  protected readonly usingFallbackData = this.requestStore.usingFallbackData;
-  protected readonly integrationHealth = this.requestStore.integrationHealth;
-  protected readonly savingSettings = this.requestStore.savingSettings;
-  protected readonly loginUsername = signal('requestor');
-  protected readonly loginPassword = signal('');
-  protected readonly showLoginPassword = signal(false);
-  protected readonly loginError = signal('');
-  protected readonly searchTerm = signal('');
-  protected readonly selectedKind = signal<'all' | 'movie' | 'show'>('all');
-  protected readonly selectedFeedItem = signal<FeedItem | null>(null);
-  protected readonly selectedFeedItemDetails = signal<MediaDetails | null>(null);
-  protected readonly selectedFeedItemLoading = signal(false);
-  protected readonly requestNote = signal('');
-  protected readonly reviewNotes = signal<Record<string, string>>({});
-  protected readonly submissionMessage = signal('');
-  protected readonly adminMessage = signal('');
-  protected readonly settingsForm = signal<IntegrationSettings>(this.requestStore.settings());
-  protected readonly canRequest = computed(() => {
-    const role = this.currentUser()?.role;
-    return role === 'requestor' || role === 'admin';
-  });
-  protected readonly isAdmin = computed(() => this.currentUser()?.role === 'admin');
-  protected readonly filteredFeedItems = computed(() => this.requestStore.feedItems());
-
-  protected selectLoginUser(username: string): void {
-    this.loginUsername.set(username);
-    this.loginError.set('');
-  }
-
-  protected updateLoginPassword(value: string): void {
-    this.loginPassword.set(value);
-    this.loginError.set('');
-  }
-
-  protected toggleLoginPasswordVisibility(): void {
-    this.showLoginPassword.update((visible) => !visible);
-  }
-
-  protected async login(): Promise<void> {
-    const loggedIn = await this.requestStore.login(this.loginUsername(), this.loginPassword());
-    if (!loggedIn) {
-      this.loginError.set('Incorrect username or password.');
-      return;
-    }
-
-    this.loginPassword.set('');
-    this.showLoginPassword.set(false);
-    this.loginError.set('');
-    this.requestNote.set('');
-    this.submissionMessage.set('');
-    this.settingsForm.set(this.requestStore.settings());
-    this.selectedFeedItem.set(null);
-    this.selectedFeedItemDetails.set(null);
-  }
+  protected readonly currentUser = this.auth.currentUser;
+  protected readonly isAdmin = this.auth.isAdmin;
+  protected readonly canRequest = this.auth.canRequest;
+  protected readonly usingFallbackData = this.api.usingFallbackData;
 
   protected async logout(): Promise<void> {
-    await this.requestStore.logout();
-    this.requestNote.set('');
-    this.submissionMessage.set('');
-    this.loginPassword.set('');
-    this.showLoginPassword.set(false);
-    this.loginError.set('');
-    this.adminMessage.set('');
-    this.selectedFeedItem.set(null);
-    this.selectedFeedItemDetails.set(null);
-    this.selectedFeedItemLoading.set(false);
-  }
-
-  protected updateSearchTerm(value: string): void {
-    this.searchTerm.set(value);
-    this.requestStore.searchFeedItems(value, this.selectedKind());
-  }
-
-  protected updateSelectedKind(value: 'all' | 'movie' | 'show'): void {
-    this.selectedKind.set(value);
-    this.requestStore.searchFeedItems(this.searchTerm(), value);
-  }
-
-  protected isFeedItemSelected(feedItemId: string): boolean {
-    return this.selectedFeedItems().some((item) => item.id === feedItemId);
-  }
-
-  protected toggleFeedItemSelection(feedItemId: string): void {
-    this.requestStore.toggleFeedItemSelection(feedItemId);
-    this.submissionMessage.set('');
-  }
-
-  protected async openFeedItemDetails(feedItem: FeedItem): Promise<void> {
-    this.selectedFeedItem.set(feedItem);
-    this.selectedFeedItemLoading.set(true);
-
-    const details = await this.requestStore.loadFeedItemDetails(feedItem);
-    const currentSelected = this.selectedFeedItem();
-    if (!currentSelected || currentSelected.id !== feedItem.id) {
-      return;
-    }
-
-    this.selectedFeedItemDetails.set(details);
-    this.selectedFeedItemLoading.set(false);
-  }
-
-  protected buildImdbSearchUrl(title: string, year: number): string {
-    return `https://www.imdb.com/find/?q=${encodeURIComponent(`${title} ${year}`)}`;
-  }
-
-  protected buildRottenTomatoesSearchUrl(title: string, year: number): string {
-    return `https://www.rottentomatoes.com/search?search=${encodeURIComponent(`${title} ${year}`)}`;
-  }
-
-  protected updateRequestNote(value: string): void {
-    this.requestNote.set(value);
-  }
-
-  protected async submitRequest(): Promise<void> {
-    const submitted = await this.requestStore.submitRequest(this.requestNote());
-    if (!submitted) {
-      return;
-    }
-
-    this.requestNote.set('');
-    this.submissionMessage.set('Request submitted for admin review.');
-  }
-
-  protected updateReviewNote(requestId: string, value: string): void {
-    this.reviewNotes.update((notes) => ({
-      ...notes,
-      [requestId]: value,
-    }));
-  }
-
-  protected async reviewRequest(requestId: string, status: RequestStatus): Promise<void> {
-    const reviewNote = this.reviewNotes()[requestId] ?? '';
-    const updated = await this.requestStore.reviewRequest(requestId, status, reviewNote);
-    if (!updated) {
-      return;
-    }
-
-    this.reviewNotes.update((notes) => ({
-      ...notes,
-      [requestId]: '',
-    }));
-
-    if (status === 'approved') {
-      this.adminMessage.set('Approval saved and fulfillment attempted in Radarr/Sonarr.');
-    }
-  }
-
-  protected updateSettingsField(section: keyof IntegrationSettings, key: string, value: string | boolean | number): void {
-    this.settingsForm.update((settings) => ({
-      ...settings,
-      [section]: {
-        ...settings[section],
-        [key]: value,
-      },
-    }));
-  }
-
-  protected updateSettingsNumberField(section: 'radarr' | 'sonarr', key: 'qualityProfileId' | 'languageProfileId', value: string): void {
-    const parsed = Number(value);
-    this.updateSettingsField(section, key, Number.isFinite(parsed) ? parsed : 1);
-  }
-
-  protected async saveAdminSettings(): Promise<void> {
-    const updated = await this.requestStore.saveSettings(this.settingsForm());
-    this.adminMessage.set(updated ? 'Integration settings saved.' : 'Unable to save integration settings.');
-    if (updated) {
-      this.settingsForm.set(this.requestStore.settings());
-    }
-  }
-
-  protected async runHealthCheck(): Promise<void> {
-    const ok = await this.requestStore.refreshIntegrationHealth();
-    this.adminMessage.set(ok ? 'Health check completed.' : 'Unable to run health check.');
-  }
-
-  protected trackById(_: number, item: FeedItem): string {
-    return item.id;
-  }
-
-  protected trackUserById(_: number, user: UserAccount): string {
-    return user.id;
+    await this.session.logout();
+    await this.router.navigate(['/login']);
   }
 }

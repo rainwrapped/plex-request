@@ -1,0 +1,57 @@
+<section class="card">
+  <div class="section-header">
+    <div>
+      <p class="eyebrow">Request basket</p>
+      <h2>Queue multiple items</h2>
+    </div>
+  </div>
+
+  @if (canRequest()) {
+    <p class="section-copy">
+      Select one or more items from the feed list, add an optional note, then submit the batch for
+      admin approval.
+    </p>
+
+    <div class="selection-list">
+      @for (item of selectedFeedItems(); track item.id) {
+        <div class="selection-item">
+          <div>
+            <strong>{{ item.title }}</strong>
+            <p>{{ item.kind | titlecase }} · {{ item.feedName }}</p>
+          </div>
+          <button type="button" class="inline-button" (click)="removeItem(item.id)">Remove</button>
+        </div>
+      } @empty {
+        <p class="empty-copy">No items selected yet.</p>
+      }
+    </div>
+
+    <label class="field">
+      <span>Request note</span>
+      <textarea
+        rows="4"
+        [ngModel]="requestNote()"
+        (ngModelChange)="updateRequestNote($event)"
+        placeholder="Optional context for the admin queue"
+      ></textarea>
+    </label>
+
+    <button
+      type="button"
+      class="action-button"
+      [disabled]="selectedFeedItems().length === 0"
+      (click)="submit()"
+    >
+      Submit {{ selectedFeedItems().length }} item request
+    </button>
+
+    @if (submissionMessage()) {
+      <p class="success-copy">{{ submissionMessage() }}</p>
+    }
+  } @else {
+    <p class="section-copy">
+      View-only accounts can search feeds and track the request workflow, but they cannot create new
+      requests.
+    </p>
+  }
+</section>

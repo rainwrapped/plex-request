@@ -1,0 +1,64 @@
+<section class="workspace">
+  <section class="card catalog-panel">
+    <div class="section-header">
+      <div>
+        <p class="eyebrow">Feed search</p>
+        <h2>Search available movies and shows</h2>
+      </div>
+      <p class="section-copy">Filter by title, source feed, or tags to build a multi-item request.</p>
+    </div>
+
+    <div class="filters">
+      <label class="field grow">
+        <span>Search feeds</span>
+        <input
+          type="search"
+          [ngModel]="searchTerm()"
+          (ngModelChange)="updateSearchTerm($event)"
+          placeholder="Search titles, feed names, or tags"
+        />
+      </label>
+
+      <label class="field field-compact">
+        <span>Type</span>
+        <select
+          [ngModel]="selectedKind()"
+          (ngModelChange)="updateSelectedKind($event)"
+          aria-label="Media type"
+        >
+          <option value="all">All</option>
+          <option value="movie">Movies</option>
+          <option value="show">Shows</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="feed-grid">
+      @for (item of feedItems(); track trackById($index, item)) {
+        <app-feed-card
+          [item]="item"
+          [selected]="isSelected(item.id)"
+          [active]="selectedFeedItem()?.id === item.id"
+          [canRequest]="canRequest()"
+          (open)="openFeedItemDetails($event)"
+          (toggle)="toggleSelection($event)"
+        />
+      } @empty {
+        <div class="empty-state">
+          <h3>No feed matches found</h3>
+          <p>Try a broader title search or switch back to all media types.</p>
+        </div>
+      }
+    </div>
+  </section>
+
+  <aside class="sidebar">
+    <app-media-detail
+      [item]="selectedFeedItem()"
+      [details]="selectedFeedItemDetails()"
+      [loading]="selectedFeedItemLoading()"
+    />
+    <app-request-basket />
+    <app-request-history />
+  </aside>
+</section>

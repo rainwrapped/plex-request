@@ -1,0 +1,48 @@
+@let feedItem = item();
+
+<article class="feed-card" [class.selected]="selected()" [class.active]="active()">
+  <div class="feed-card-header">
+    <div>
+      <h3>{{ feedItem.title }}</h3>
+      <p>{{ feedItem.feedName }}</p>
+    </div>
+    <div class="badges">
+      <span class="badge">{{ feedItem.kind | titlecase }} · {{ feedItem.year }}</span>
+      @if (feedItem.availability?.inPlex) {
+        <span class="badge success">Already in Plex</span>
+      }
+    </div>
+  </div>
+
+  <p class="feed-summary">{{ feedItem.summary }}</p>
+
+  <div class="tag-list">
+    @for (tag of feedItem.tags; track tag) {
+      <span class="tag">{{ tag }}</span>
+    }
+  </div>
+
+  <div class="feed-card-actions">
+    <button type="button" class="action-button secondary" (click)="open.emit(feedItem)">
+      Open details
+    </button>
+
+    <button
+      type="button"
+      class="action-button"
+      [class.secondary]="!selected()"
+      [disabled]="!canRequest() || feedItem.availability?.inPlex"
+      (click)="toggle.emit(feedItem.id)"
+    >
+      @if (feedItem.availability?.inPlex) {
+        Already in Plex
+      } @else if (!canRequest()) {
+        Browsing only
+      } @else if (selected()) {
+        Remove from request
+      } @else {
+        Add to request
+      }
+    </button>
+  </div>
+</article>

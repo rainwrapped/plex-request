@@ -1,0 +1,107 @@
+<section class="card detail-card">
+  <div class="section-header">
+    <div>
+      <p class="eyebrow">Card details</p>
+      <h2>
+        @if (item(); as detailItem) {
+          {{ detailItem.title }}
+        } @else {
+          Click a card for show and movie details
+        }
+      </h2>
+    </div>
+    @if (item(); as detailItem) {
+      <span class="badge">{{ detailItem.kind | titlecase }} · {{ detailItem.year }}</span>
+    }
+  </div>
+
+  @if (item(); as detailItem) {
+    @if (loading()) {
+      <p class="detail-copy">Loading IMDb and Rotten Tomatoes source data...</p>
+    } @else if (details(); as mediaDetails) {
+      <p class="section-copy">{{ mediaDetails.overview }}</p>
+
+      @if (mediaDetails.tagline) {
+        <p class="detail-copy"><strong>Tagline:</strong> {{ mediaDetails.tagline }}</p>
+      }
+
+      <div class="detail-metrics">
+        @if (mediaDetails.runtimeMinutes) {
+          <span class="badge muted">{{ mediaDetails.runtimeMinutes }} min</span>
+        }
+        @for (genre of mediaDetails.genres; track genre) {
+          <span class="badge">{{ genre }}</span>
+        }
+      </div>
+
+      <div class="detail-sources">
+        <div class="source-group">
+          <p class="eyebrow">IMDb source</p>
+          <a [href]="mediaDetails.imdbUrl" target="_blank" rel="noreferrer">Open title page</a>
+          @if (mediaDetails.imdbId) {
+            <p class="detail-copy">IMDb ID: {{ mediaDetails.imdbId }}</p>
+          }
+        </div>
+
+        <div class="source-group">
+          <p class="eyebrow">Rotten Tomatoes reviews</p>
+          <a [href]="mediaDetails.rottenTomatoesUrl" target="_blank" rel="noreferrer">Open review source</a>
+          @if (mediaDetails.rottenTomatoesScore) {
+            <p class="detail-copy">Score: {{ mediaDetails.rottenTomatoesScore }}</p>
+          }
+          @if (mediaDetails.rottenTomatoesConsensus) {
+            <p class="detail-copy">Consensus: {{ mediaDetails.rottenTomatoesConsensus }}</p>
+          }
+        </div>
+      </div>
+
+      @if (mediaDetails.cast.length) {
+        <div class="detail-cast">
+          <p class="eyebrow">Cast</p>
+          <div class="tag-list">
+            @for (member of mediaDetails.cast; track member) {
+              <span class="tag">{{ member }}</span>
+            }
+          </div>
+        </div>
+      }
+
+      @if (mediaDetails.sourceLinks.length) {
+        <div class="detail-links">
+          @for (sourceLink of mediaDetails.sourceLinks; track sourceLink.url) {
+            <a class="source-link" [href]="sourceLink.url" target="_blank" rel="noreferrer">
+              <strong>{{ sourceLink.label }}</strong>
+              <span>{{ sourceLink.note }}</span>
+            </a>
+          }
+        </div>
+      }
+    } @else {
+      <p class="detail-copy">{{ detailItem.summary }}</p>
+      <div class="detail-links">
+        <a
+          class="source-link"
+          [href]="buildImdbSearchUrl(detailItem.title, detailItem.year)"
+          target="_blank"
+          rel="noreferrer"
+        >
+          <strong>IMDb source</strong>
+          <span>Open the matching title page.</span>
+        </a>
+        <a
+          class="source-link"
+          [href]="buildRottenTomatoesSearchUrl(detailItem.title, detailItem.year)"
+          target="_blank"
+          rel="noreferrer"
+        >
+          <strong>Rotten Tomatoes reviews</strong>
+          <span>Search for critic and audience reviews.</span>
+        </a>
+      </div>
+    }
+  } @else {
+    <p class="detail-copy">
+      Click a card to load show or movie information, IMDb source links, and Rotten Tomatoes review sourcing.
+    </p>
+  }
+</section>

@@ -1,0 +1,74 @@
+<section class="card login-panel">
+  <div class="session-panel">
+    <div>
+      <p class="eyebrow">Demo access</p>
+      <h2>Choose an account to log in</h2>
+      <p class="section-copy">Accounts stay separate now. Pick one role card and enter credentials to continue.</p>
+    </div>
+
+    <div class="account-grid">
+      @for (user of users(); track trackUserById($index, user)) {
+        <button
+          type="button"
+          class="login-card"
+          [class.selected]="loginUsername() === (user.username || user.id)"
+          (click)="selectLoginUser(user.username || user.id)"
+        >
+          <strong>{{ user.name }}</strong>
+          <span>{{ user.role | titlecase }}</span>
+          <span>{{ user.username || user.id }}</span>
+        </button>
+      }
+    </div>
+
+    <label class="field">
+      <span>Username</span>
+      <input
+        type="text"
+        [ngModel]="loginUsername()"
+        (ngModelChange)="selectLoginUser($event)"
+        placeholder="admin"
+      />
+    </label>
+
+    <label class="field password-field">
+      <span>Password</span>
+      <div class="password-input-row">
+        <input
+          [type]="showLoginPassword() ? 'text' : 'password'"
+          [ngModel]="loginPassword()"
+          (ngModelChange)="updateLoginPassword($event)"
+          placeholder="Enter account password"
+        />
+        <button
+          type="button"
+          class="inline-button password-toggle"
+          (click)="toggleLoginPasswordVisibility()"
+          [attr.aria-pressed]="showLoginPassword()"
+          [attr.aria-label]="showLoginPassword() ? 'Hide password' : 'Show password'"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            @if (showLoginPassword()) {
+              <path
+                d="M3.98 12c1.77-4.39 5.7-7 8.02-7 2.32 0 6.25 2.61 8.02 7-.86 2.12-2.2 3.91-3.8 5.17l1.44 1.44c1.93-1.52 3.5-3.63 4.47-6.11.11-.28.11-.59 0-.87C19.53 6.83 15.08 4 12 4c-2.05 0-4.36 1.08-6.31 2.95L3.59 4.85 2.18 6.26 4.2 8.28A14.79 14.79 0 0 0 1.9 11.13c-.11.28-.11.59 0 .87C2.87 14.48 4.44 16.59 6.37 18.11l1.44-1.44C6.22 15.41 4.88 13.62 3.98 12Zm8.02 4c-1.65 0-3-1.35-3-3 0-.39.08-.76.21-1.11l4.9 4.9c-.35.13-.72.21-1.11.21Zm3-3c0 .39-.08.76-.21 1.11l-4.9-4.9c.35-.13.72-.21 1.11-.21 1.65 0 3 1.35 3 3Z"
+              />
+            } @else {
+              <path
+                d="M12 5c3.08 0 7.53 2.83 10.1 6.87.11.28.11.59 0 .87C19.53 16.77 15.08 20 12 20s-7.53-3.23-10.1-7.26a.92.92 0 0 1 0-.87C4.47 7.83 8.92 5 12 5Zm0 2C9.68 7 5.75 9.61 3.98 12c1.77 2.39 5.7 5 8.02 5 2.32 0 6.25-2.61 8.02-5-1.77-2.39-5.7-5-8.02-5Zm0 2.5A2.5 2.5 0 1 1 12 14a2.5 2.5 0 0 1 0-5Zm0 2A.5.5 0 1 0 12 13a.5.5 0 0 0 0-1Z"
+              />
+            }
+          </svg>
+        </button>
+      </div>
+    </label>
+
+    <div class="actions-row">
+      <button type="button" class="action-button" (click)="login()">Log in</button>
+      <span class="detail-copy">Default local seed password: <strong>plex-demo</strong></span>
+    </div>
+
+    @if (loginError()) {
+      <p class="detail-copy error-copy">{{ loginError() }}</p>
+    }
+  </div>
+</section>

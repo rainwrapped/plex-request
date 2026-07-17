@@ -1,45 +1,67 @@
 # Plex Request Hub
 
-Plex Request Hub is an Angular + TypeScript web app for browsing curated media feeds, batching show
-and movie requests, and sending those requests to an admin approval queue before anything is added
-to Plex.
+Plex Request Hub is an Angular + TypeScript web app for browsing media catalogs, batching show and
+movie requests, and sending those requests to an admin approval queue before anything is added to
+Plex.
 
 ## Included workflow
 
-- Search across configured feed entries by title, source feed, or tags
+- Search live TMDb feeds by title and media type when credentials are configured
+- Check whether a searched title is already available in Plex before requesting it
 - Submit multiple movies and shows in a single request
-- Switch between demo account roles:
+- Log in to separate session-backed account roles:
   - **View-only**: browse feeds without requesting
   - **Requestor**: build and submit request batches
-  - **Admin**: review pending requests and approve or deny them
-- Persist request activity locally in the browser via `localStorage`
+  - **Admin**: review pending requests, approve or deny them, and run integration checks
+- Trigger Radarr and Sonarr fulfillment attempts whenever approved requests are processed
+- Persist users, sessions, request history, and integration settings in the local API runtime store
 
 ## Demo accounts
 
-The app currently ships with seeded in-browser demo accounts and sample feed data:
+The app currently ships with demo accounts and fallback sample feed data:
 
-- `Avery Viewer` — view-only access
-- `Riley Requestor` — can submit requests
-- `Jordan Admin` — can approve or deny pending requests
+- `viewer` / `Avery Viewer` - view-only access
+- `requestor` / `Riley Requestor` - can submit requests
+- `admin` / `Jordan Admin` - can approve or deny pending requests
+- Default password for seeded accounts: `plex-demo` (override admin at bootstrap with `DEFAULT_ADMIN_PASSWORD`)
 
 ## Local development
 
-Install dependencies and start the Angular dev server:
+Copy the environment template if you want live providers:
+
+```bash
+cp .env.example .env
+```
+
+Set these values in `.env` to enable real integrations:
+
+- `TMDB_API_KEY` or `TMDB_READ_ACCESS_TOKEN` for live movie/show search
+- `PLEX_BASE_URL` and `PLEX_TOKEN` for Plex availability checks
+- `RADARR_*` and `SONARR_*` for downloader fulfillment
+
+You can also configure or update these values in the admin settings panel after logging in.
+
+Install dependencies and start both the API server and Angular dev server:
 
 ```bash
 npm install
 npm start
 ```
 
-Then open `http://localhost:4200/`.
+Then open `http://localhost:4300/`.
 
 ## Scripts
 
 - `npm run build` — production build
-- `npm run test -- --watch=false` — run the Vitest test suite once
+- `npm run start:api` — run only the local API server on `http://localhost:3000`
+- `npm run start:web` — run only the Angular dev server on `http://localhost:4300`
+- `npm run test` — run the Vitest test suite once
 
 ## Notes
 
-- This repo has been fully repurposed into a front-end Angular application.
-- The current implementation uses local mock data and browser persistence, so it is ready for a
-  future real backend for authentication, feed ingestion, and Plex integration.
+- Authentication now uses httpOnly cookie-backed sessions handled by the Node API.
+- Request approval attempts fulfillment through Radarr/Sonarr and records per-item outcomes.
+- If TMDb or Plex credentials are missing, the UI falls back to the seeded demo catalog instead of
+  hard failing.
+- The seeded demo password and offline fallback are for local demos only. Set `DEFAULT_ADMIN_PASSWORD`
+  before any non-local deployment; production startup refuses the default.

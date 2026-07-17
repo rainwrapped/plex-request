@@ -14,6 +14,11 @@ export const routes: Routes = [
     loadComponent: () => import('./features/catalog/catalog-page').then((m) => m.CatalogPage),
   },
   {
+    path: 'requests',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/requests/requests-page').then((m) => m.RequestsPage),
+  },
+  {
     path: 'admin',
     canActivate: [authGuard, adminGuard],
     loadComponent: () => import('./features/admin/admin-page').then((m) => m.AdminPage),

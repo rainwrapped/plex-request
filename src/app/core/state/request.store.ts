@@ -4,6 +4,7 @@ import type {
   FeedItem,
   MediaRequest,
   RequestLineItem,
+  RequestPriority,
   RequestStatus,
 } from '../../../../shared/models';
 
@@ -18,6 +19,7 @@ export class RequestStore {
   private readonly auth = inject(AuthStore);
 
   readonly requests = signal<MediaRequest[]>(SEEDED_REQUESTS_DATA);
+  readonly submissionMessage = signal('');
 
   readonly currentUserRequests = computed(() => {
     const currentUser = this.auth.currentUser();
@@ -57,9 +59,14 @@ export class RequestStore {
     this.requests.set(this.fallbackRequestsForCurrentUser());
   }
 
-  async submit(selectedItems: FeedItem[], requestNote: string): Promise<boolean> {
+  async submit(
+    selectedItems: FeedItem[],
+    requestNote: string,
+    priority: RequestPriority = 'normal',
+  ): Promise<boolean> {
     const currentUser = this.auth.currentUser();
     const normalizedRequestNote = requestNote.trim();
+    this.submissionMessage.set('');
 
     if (!currentUser || currentUser.role === 'viewer' || selectedItems.length === 0) {
       return false;
@@ -75,9 +82,13 @@ export class RequestStore {
     }));
 
     try {
-      const result = await this.api.requestJson<{ request: MediaRequest }>('/api/requests', {
+      const result = await this.api.requestJson<{
+        request: MediaRequest;
+        duplicateCount: number;
+        createdCount: number;
+      }>('/api/requests', {
         method: 'POST',
-        body: JSON.stringify({ items: lineItems, requestNote: normalizedRequestNote }),
+        body: JSON.stringify({ items: lineItems, requestNote: normalizedRequestNote, priority }),
       });
 
       if (!result.ok) {
@@ -85,6 +96,19 @@ export class RequestStore {
       }
 
       await this.refresh();
+      const createdCount = result.data?.createdCount ?? selectedItems.length;
+      const duplicateCount = result.data?.duplicateCount ?? 0;
+      if (createdCount > 0 && duplicateCount > 0) {
+        this.submissionMessage.set(
+          `${createdCount} new item${createdCount === 1 ? '' : 's'} submitted; ${duplicateCount} existing request${duplicateCount === 1 ? '' : 's'} got your vote.`,
+        );
+      } else if (duplicateCount > 0) {
+        this.submissionMessage.set(
+          'That title already existed, so your vote was added to the request.',
+        );
+      } else {
+        this.submissionMessage.set('Request submitted for admin review.');
+      }
       return true;
     } catch {
       this.api.markOffline();
@@ -93,11 +117,14 @@ export class RequestStore {
         requestedByUserId: currentUser.id,
         requestedAt: new Date().toISOString(),
         requestNote: normalizedRequestNote,
+        priority,
+        votes: [currentUser.id],
         status: 'pending',
         items: lineItems,
       };
 
       this.requests.update((requests) => [nextRequest, ...requests]);
+      this.submissionMessage.set('Request saved locally in demo mode.');
       return true;
     }
   }
@@ -145,6 +172,52 @@ export class RequestStore {
         }),
       );
 
+      return updated;
+    }
+  }
+
+  async retryFulfillment(requestId: string): Promise<boolean> {
+    const reviewer = this.auth.currentUser();
+
+    if (!reviewer || reviewer.role !== 'admin') {
+      return false;
+    }
+
+    try {
+      const result = await this.api.requestJson<{ request: MediaRequest }>(
+        `/api/requests/${requestId}/retry`,
+        { method: 'POST' },
+      );
+
+      if (!result.ok) {
+        return false;
+      }
+
+      await this.refresh();
+      return true;
+    } catch {
+      this.api.markOffline();
+      let updated = false;
+      this.requests.update((requests) =>
+        requests.map((request) => {
+          if (request.id !== requestId || request.status !== 'approved') {
+            return request;
+          }
+
+          updated = true;
+          return {
+            ...request,
+            fulfillmentStatus: 'failed',
+            fulfillmentDetails: request.items.map((item) => ({
+              itemId: item.id,
+              itemTitle: item.title,
+              target: item.kind === 'movie' ? 'radarr' : 'sonarr',
+              status: 'failed',
+              message: 'Demo mode cannot reach Radarr or Sonarr.',
+            })),
+          };
+        }),
+      );
       return updated;
     }
   }

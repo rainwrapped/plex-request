@@ -10,7 +10,10 @@
 
       @if (currentUser()) {
         <nav class="app-nav">
-          <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Catalog</a>
+          <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"
+            >Catalog</a
+          >
+          <a routerLink="/requests" routerLinkActive="active">Requests</a>
           @if (isAdmin()) {
             <a routerLink="/admin" routerLinkActive="active">Admin</a>
           }
@@ -24,7 +27,9 @@
           <div>
             <p class="eyebrow">Signed in</p>
             <h2>{{ user.name }}</h2>
-            <p class="section-copy">Use the request workspace tied to this account, or sign out to switch users.</p>
+            <p class="section-copy">
+              Use the request workspace tied to this account, or sign out to switch users.
+            </p>
           </div>
 
           <div class="badges">
@@ -47,7 +52,8 @@
             <p class="eyebrow">Demo access</p>
             <h2>Log in to continue</h2>
             <p class="section-copy">
-              Sign in with a viewer, requestor, or admin account to browse feeds and submit requests.
+              Sign in with a viewer, requestor, or admin account to browse feeds and submit
+              requests.
             </p>
           </div>
           <a class="action-button" routerLink="/login">Go to login</a>
@@ -65,8 +71,8 @@
         </div>
       </div>
       <p class="section-copy">
-        Add TMDb, Plex, Radarr, and Sonarr settings in the admin panel (or bootstrap from environment) to replace
-        seeded demo behavior.
+        Add TMDb, Plex, Radarr, and Sonarr settings in the admin panel (or bootstrap from
+        environment) to replace seeded demo behavior.
       </p>
     </section>
   }

@@ -1,0 +1,30 @@
+<section class="card">
+  <div class="section-header">
+    <div>
+      <p class="eyebrow">Notifications</p>
+      <h2>Recent workflow events</h2>
+    </div>
+    <button type="button" class="action-button secondary" (click)="refresh()">Refresh</button>
+  </div>
+
+  <div class="request-stack">
+    @for (notification of notifications(); track notification.id) {
+      <article class="request-card">
+        <div class="feed-card-header">
+          <div>
+            <h3>{{ notification.event | titlecase }}</h3>
+            <p>{{ notification.createdAt | date: 'medium' }}</p>
+          </div>
+          <span class="badge muted">{{ notification.requestId }}</span>
+        </div>
+        <p class="detail-copy">{{ notification.message }}</p>
+      </article>
+    } @empty {
+      <p class="empty-copy">No workflow notifications have been logged yet.</p>
+    }
+  </div>
+
+  @if (adminMessage()) {
+    <p class="detail-copy">{{ adminMessage() }}</p>
+  }
+</section>

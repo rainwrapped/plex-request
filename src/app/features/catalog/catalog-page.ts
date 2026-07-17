@@ -6,13 +6,12 @@ import type { FeedItem, MediaDetails, MediaKindFilter } from '../../../../shared
 import { AuthStore } from '../../core/state/auth.store';
 import { CatalogStore } from '../../core/state/catalog.store';
 import { RequestBasket } from '../requests/request-basket';
-import { RequestHistory } from '../requests/request-history';
 import { FeedCard } from './feed-card';
 import { MediaDetail } from './media-detail';
 
 @Component({
   selector: 'app-catalog-page',
-  imports: [FormsModule, FeedCard, MediaDetail, RequestBasket, RequestHistory],
+  imports: [FormsModule, FeedCard, MediaDetail, RequestBasket],
   templateUrl: './catalog-page.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

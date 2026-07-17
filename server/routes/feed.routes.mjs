@@ -15,7 +15,13 @@ feedRoutes.get(
       request.query.kind === 'movie' || request.query.kind === 'show' ? request.query.kind : 'all';
 
     try {
-      const items = await buildFeed(query, kind, request.store.settings);
+      const items = await buildFeed(
+        query,
+        kind,
+        request.store.settings,
+        request.store.requests,
+        request.user.id,
+      );
       response.json({
         mode: getEnvironmentStatus(request.store.settings).tmdbConfigured ? 'live' : 'demo',
         items,

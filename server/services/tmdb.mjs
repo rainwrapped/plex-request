@@ -61,7 +61,8 @@ async function getGenreMap(settings, kind) {
 export function mapTmdbResult(result, kind, genreMap, feedName) {
   const title = kind === 'movie' ? result.title : result.name;
   const dateValue = kind === 'movie' ? result.release_date : result.first_air_date;
-  const year = Number.parseInt(String(dateValue ?? '').slice(0, 4), 10) || new Date().getUTCFullYear();
+  const year =
+    Number.parseInt(String(dateValue ?? '').slice(0, 4), 10) || new Date().getUTCFullYear();
   const tags = (result.genre_ids ?? [])
     .map((genreId) => genreMap.get(genreId))
     .filter(Boolean)
@@ -76,6 +77,12 @@ export function mapTmdbResult(result, kind, genreMap, feedName) {
     feedName,
     summary: result.overview || 'No synopsis was provided by the upstream catalog.',
     tags,
+    posterUrl: result.poster_path
+      ? `https://image.tmdb.org/t/p/w342${result.poster_path}`
+      : undefined,
+    backdropUrl: result.backdrop_path
+      ? `https://image.tmdb.org/t/p/w780${result.backdrop_path}`
+      : undefined,
     popularity: result.popularity ?? 0,
   };
 }
@@ -97,8 +104,12 @@ export async function searchTmdb(settings, kind, query) {
     query: isSearch ? query.trim() : undefined,
   });
 
-  const feedName = isSearch ? 'TMDb search' : `TMDb popular ${kind === 'movie' ? 'movies' : 'shows'}`;
-  return (payload.results ?? []).slice(0, 10).map((result) => mapTmdbResult(result, kind, genreMap, feedName));
+  const feedName = isSearch
+    ? 'TMDb search'
+    : `TMDb popular ${kind === 'movie' ? 'movies' : 'shows'}`;
+  return (payload.results ?? [])
+    .slice(0, 10)
+    .map((result) => mapTmdbResult(result, kind, genreMap, feedName));
 }
 
 export async function resolveTmdbDetails(item, settings) {
@@ -130,6 +141,6 @@ export async function resolveTmdbDetails(item, settings) {
 
   const detailPath = item.kind === 'movie' ? `/movie/${tmdbId}` : `/tv/${tmdbId}`;
   return tmdbFetch(settings, detailPath, {
-    append_to_response: 'external_ids,credits',
+    append_to_response: 'external_ids,credits,videos',
   });
 }

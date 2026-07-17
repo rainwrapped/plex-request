@@ -8,12 +8,21 @@ Plex.
 
 - Search live TMDb feeds by title and media type when credentials are configured
 - Check whether a searched title is already available in Plex before requesting it
+- See poster artwork, richer title details, trailers, runtime, ratings links, and season counts when
+  upstream metadata is available
 - Submit multiple movies and shows in a single request
+- Mark a request as normal or high priority
+- Add a vote to an existing pending or approved request instead of creating duplicates
+- Review request history on the dedicated Requests page with status and fulfillment filters
 - Log in to separate session-backed account roles:
   - **View-only**: browse feeds without requesting
   - **Requestor**: build and submit request batches
-  - **Admin**: review pending requests, approve or deny them, and run integration checks
+  - **Admin**: review pending requests, approve or deny them, manage users, and run integration
+    checks
 - Trigger Radarr and Sonarr fulfillment attempts whenever approved requests are processed
+- Retry failed or partially fulfilled approved requests from the request history
+- Record workflow notification events for submissions, votes, approvals, denials, and fulfillment
+  retries
 - Persist users, sessions, request history, and integration settings in the local API runtime store
 
 ## Demo accounts
@@ -50,6 +59,19 @@ npm start
 
 Then open `http://localhost:4300/`.
 
+## Administration
+
+Log in as an admin and open the Admin page to:
+
+- Create users, change roles, reset passwords, disable accounts, or delete accounts
+- Approve or deny pending requests
+- Review recent workflow notifications
+- Configure TMDb, Plex, Radarr, and Sonarr integration settings
+- Run provider health checks
+
+Admins cannot delete their own account. Disabling an account also clears that user's active
+sessions.
+
 ## Scripts
 
 - `npm run build` — production build
@@ -61,7 +83,12 @@ Then open `http://localhost:4300/`.
 
 - Authentication now uses httpOnly cookie-backed sessions handled by the Node API.
 - Request approval attempts fulfillment through Radarr/Sonarr and records per-item outcomes.
+- Duplicate requests are collapsed into votes when a matching TMDb id, or matching title/kind/year,
+  is already pending or approved.
 - If TMDb or Plex credentials are missing, the UI falls back to the seeded demo catalog instead of
   hard failing.
 - The seeded demo password and offline fallback are for local demos only. Set `DEFAULT_ADMIN_PASSWORD`
   before any non-local deployment; production startup refuses the default.
+- For non-local deployment, also configure persistent storage for the JSON runtime store, set the
+  provider credentials via environment variables or the admin panel, and place the API behind normal
+  HTTPS/rate-limit protections.

@@ -48,4 +48,23 @@ describe('CatalogStore', () => {
     catalog.clearSelection();
     expect(catalog.selectedFeedItems().length).toBe(0);
   });
+
+  it('does not select already approved titles', () => {
+    auth.currentUser.set({ id: 'requestor-1', name: 'Riley', role: 'requestor' });
+    catalog.feedItems.set([
+      {
+        ...catalog.feedItems()[0],
+        requestStatus: {
+          pending: false,
+          approved: true,
+          requestedByCurrentUser: true,
+          voteCount: 1,
+        },
+      },
+    ]);
+
+    catalog.toggleSelection(catalog.feedItems()[0].id);
+
+    expect(catalog.selectedFeedItems()).toEqual([]);
+  });
 });

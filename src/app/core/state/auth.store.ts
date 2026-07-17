@@ -39,6 +39,97 @@ export class AuthStore {
     }
   }
 
+  async loadAdminUsers(): Promise<boolean> {
+    if (this.currentUser()?.role !== 'admin') {
+      return false;
+    }
+
+    try {
+      const result = await this.api.requestJson<{ users: UserAccount[] }>('/api/admin/users');
+      if (!result.ok || !result.data) {
+        return false;
+      }
+
+      this.api.markOnline();
+      this.users.set(result.data.users);
+      return true;
+    } catch {
+      this.api.markOffline();
+      return false;
+    }
+  }
+
+  async createUser(user: UserAccount): Promise<boolean> {
+    if (this.currentUser()?.role !== 'admin') {
+      return false;
+    }
+
+    try {
+      const result = await this.api.requestJson<{ user: UserAccount }>('/api/admin/users', {
+        method: 'POST',
+        body: JSON.stringify({ user }),
+      });
+
+      if (!result.ok || !result.data) {
+        return false;
+      }
+
+      await this.loadAdminUsers();
+      return true;
+    } catch {
+      this.api.markOffline();
+      return false;
+    }
+  }
+
+  async updateUser(user: UserAccount): Promise<boolean> {
+    if (this.currentUser()?.role !== 'admin') {
+      return false;
+    }
+
+    try {
+      const result = await this.api.requestJson<{ user: UserAccount }>(
+        `/api/admin/users/${user.id}`,
+        {
+          method: 'PUT',
+          body: JSON.stringify({ user }),
+        },
+      );
+
+      if (!result.ok || !result.data) {
+        return false;
+      }
+
+      await this.loadAdminUsers();
+      return true;
+    } catch {
+      this.api.markOffline();
+      return false;
+    }
+  }
+
+  async deleteUser(userId: string): Promise<boolean> {
+    if (this.currentUser()?.role !== 'admin') {
+      return false;
+    }
+
+    try {
+      const result = await this.api.requestJson<{ ok: boolean }>(`/api/admin/users/${userId}`, {
+        method: 'DELETE',
+      });
+
+      if (!result.ok) {
+        return false;
+      }
+
+      await this.loadAdminUsers();
+      return true;
+    } catch {
+      this.api.markOffline();
+      return false;
+    }
+  }
+
   async restoreSession(): Promise<void> {
     try {
       const result = await this.api.requestJson<{ user: UserAccount | null }>('/api/session');
@@ -67,7 +158,8 @@ export class AuthStore {
       const normalizedUsername = username.trim().toLowerCase();
       const user = DEMO_USERS.find(
         (candidate) =>
-          candidate.username === normalizedUsername || candidate.id === normalizedUsername,
+          (candidate.username === normalizedUsername || candidate.id === normalizedUsername) &&
+          !candidate.disabled,
       );
       if (!user || user.password !== password.trim()) {
         return false;

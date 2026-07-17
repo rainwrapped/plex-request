@@ -38,12 +38,18 @@
         </label>
 
         <div class="actions-row">
-          <button type="button" class="action-button" (click)="review(request.id, 'approved')">Approve</button>
-          <button type="button" class="action-button danger" (click)="review(request.id, 'denied')">Deny</button>
+          <button type="button" class="action-button" (click)="review(request.id, 'approved')">
+            Approve
+          </button>
+          <button type="button" class="action-button danger" (click)="review(request.id, 'denied')">
+            Deny
+          </button>
         </div>
 
         @if (request.fulfillmentStatus) {
-          <p class="detail-copy"><strong>Fulfillment:</strong> {{ request.fulfillmentStatus | titlecase }}</p>
+          <p class="detail-copy">
+            <strong>Fulfillment:</strong> {{ request.fulfillmentStatus | titlecase }}
+          </p>
         }
       </article>
     } @empty {

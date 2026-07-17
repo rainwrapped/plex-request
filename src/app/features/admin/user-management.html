@@ -1,0 +1,104 @@
+<section class="card">
+  <div class="section-header">
+    <div>
+      <p class="eyebrow">Admin users</p>
+      <h2>Manage access</h2>
+    </div>
+    <button type="button" class="action-button secondary" (click)="clearForm()">New user</button>
+  </div>
+
+  <div class="admin-grid">
+    <div class="request-stack">
+      @for (user of users(); track user.id) {
+        <article class="request-card">
+          <div class="feed-card-header">
+            <div>
+              <h3>{{ user.name }}</h3>
+              <p>{{ user.username || user.id }}</p>
+            </div>
+            <div class="badges">
+              <span class="badge role">{{ user.role | titlecase }}</span>
+              @if (user.disabled) {
+                <span class="badge muted">Disabled</span>
+              }
+            </div>
+          </div>
+
+          <div class="actions-row">
+            <button type="button" class="action-button secondary" (click)="edit(user)">Edit</button>
+            <button
+              type="button"
+              class="action-button danger"
+              [disabled]="user.id === currentUser()?.id"
+              (click)="deleteUser(user)"
+            >
+              Delete
+            </button>
+          </div>
+        </article>
+      }
+    </div>
+
+    <form class="settings-grid stacked-form" (ngSubmit)="save()">
+      <label class="field">
+        <span>Username</span>
+        <input
+          type="text"
+          [ngModel]="form().username"
+          (ngModelChange)="updateField('username', $event)"
+          name="username"
+          required
+        />
+      </label>
+
+      <label class="field">
+        <span>Display name</span>
+        <input
+          type="text"
+          [ngModel]="form().name"
+          (ngModelChange)="updateField('name', $event)"
+          name="name"
+          required
+        />
+      </label>
+
+      <label class="field">
+        <span>Role</span>
+        <select [ngModel]="form().role" (ngModelChange)="updateField('role', $event)" name="role">
+          <option value="viewer">Viewer</option>
+          <option value="requestor">Requestor</option>
+          <option value="admin">Admin</option>
+        </select>
+      </label>
+
+      <label class="field">
+        <span>Password {{ form().id ? 'reset' : '' }}</span>
+        <input
+          type="password"
+          [ngModel]="form().password"
+          (ngModelChange)="updateField('password', $event)"
+          name="password"
+          [required]="!form().id"
+        />
+      </label>
+
+      <label class="check-field">
+        <input
+          type="checkbox"
+          [ngModel]="form().disabled"
+          (ngModelChange)="updateField('disabled', $event)"
+          name="disabled"
+        />
+        <span>Disable account</span>
+      </label>
+
+      <button type="submit" class="action-button">
+        {{ form().id ? 'Save user' : 'Create user' }}
+      </button>
+    </form>
+  </div>
+
+  @if (adminMessage()) {
+    <p class="detail-copy">{{ adminMessage() }}</p>
+  }
+</section>

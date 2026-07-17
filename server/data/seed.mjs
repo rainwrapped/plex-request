@@ -1,4 +1,9 @@
-import { DEMO_ACCOUNTS, DEMO_PASSWORD, FEED_ITEMS, SEEDED_REQUESTS } from '../../shared/catalog.mjs';
+import {
+  DEMO_ACCOUNTS,
+  DEMO_PASSWORD,
+  FEED_ITEMS,
+  SEEDED_REQUESTS,
+} from '../../shared/catalog.mjs';
 import { defaultAdminPassword } from '../config.mjs';
 import { hashPassword } from '../lib/crypto.mjs';
 
@@ -7,6 +12,18 @@ export const fallbackFeedItems = FEED_ITEMS;
 
 /** Seeded request history for a fresh store. */
 export const seededRequests = SEEDED_REQUESTS;
+
+/** Seeded notification history for a fresh store. */
+export const seededNotifications = [
+  {
+    id: 'notification-1000',
+    createdAt: '2026-07-08T12:15:00.000Z',
+    event: 'request-approved',
+    requestId: 'request-1000',
+    actorUserId: 'admin-1',
+    message: 'Spider-Man: Across the Spider-Verse was approved and sent to fulfillment.',
+  },
+];
 
 /** Seeded accounts with hashed passwords derived from the shared demo accounts. */
 export const seededUsers = DEMO_ACCOUNTS.map((account) => ({

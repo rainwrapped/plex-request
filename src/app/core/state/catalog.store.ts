@@ -3,7 +3,7 @@ import { inject, Injectable, signal } from '@angular/core';
 import type { FeedItem, MediaDetails, MediaKindFilter } from '../../../../shared/models';
 
 import { ApiService } from '../api/api.service';
-import { FALLBACK_FEED_ITEMS } from '../data/seed';
+import { FALLBACK_FEED_ITEMS, SEEDED_REQUESTS_DATA } from '../data/seed';
 import { AuthStore } from './auth.store';
 
 const FEED_SEARCH_DELAY_MS = 250;
@@ -23,6 +23,52 @@ function filterFallbackFeed(query: string, kind: MediaKindFilter): FeedItem[] {
   });
 }
 
+function requestItemMatches(
+  left: FeedItem,
+  right: { title: string; kind: string; year: number; tmdbId?: number },
+): boolean {
+  if (left.tmdbId && right.tmdbId && Number(left.tmdbId) === Number(right.tmdbId)) {
+    return true;
+  }
+
+  return (
+    left.kind === right.kind &&
+    Number(left.year) === Number(right.year) &&
+    left.title.trim().toLowerCase() === right.title.trim().toLowerCase()
+  );
+}
+
+function attachFallbackRequestStatus(items: FeedItem[], currentUserId = ''): FeedItem[] {
+  return items.map((item) => {
+    const matches = SEEDED_REQUESTS_DATA.filter(
+      (request) =>
+        request.status !== 'denied' &&
+        request.items.some((requestItem) => requestItemMatches(item, requestItem)),
+    );
+
+    if (matches.length === 0) {
+      return item;
+    }
+
+    const votes = new Set(
+      matches.flatMap((request) => request.votes ?? [request.requestedByUserId]),
+    );
+    return {
+      ...item,
+      requestStatus: {
+        pending: matches.some((request) => request.status === 'pending'),
+        approved: matches.some((request) => request.status === 'approved'),
+        requestedByCurrentUser: matches.some(
+          (request) =>
+            request.requestedByUserId === currentUserId ||
+            (request.votes ?? []).includes(currentUserId),
+        ),
+        voteCount: votes.size,
+      },
+    };
+  });
+}
+
 function buildFallbackMediaDetails(feedItem: FeedItem): MediaDetails {
   const searchQuery = encodeURIComponent(`${feedItem.title} ${feedItem.year}`);
 
@@ -31,6 +77,9 @@ function buildFallbackMediaDetails(feedItem: FeedItem): MediaDetails {
     kind: feedItem.kind,
     year: feedItem.year,
     overview: feedItem.summary,
+    seasonCount: feedItem.kind === 'show' ? 1 : undefined,
+    posterUrl: feedItem.posterUrl,
+    backdropUrl: feedItem.backdropUrl,
     genres: feedItem.tags.slice(0, 4),
     cast: [],
     imdbUrl: `https://www.imdb.com/find/?q=${searchQuery}`,
@@ -72,7 +121,7 @@ export class CatalogStore {
 
   async refreshFeed(query: string, kind: MediaKindFilter): Promise<void> {
     if (!this.auth.currentUser()) {
-      this.feedItems.set(filterFallbackFeed(query, kind));
+      this.feedItems.set(attachFallbackRequestStatus(filterFallbackFeed(query, kind)));
       return;
     }
 
@@ -92,7 +141,9 @@ export class CatalogStore {
       this.feedItems.set(result.data.items);
     } catch {
       this.api.markOffline();
-      this.feedItems.set(filterFallbackFeed(query, kind));
+      this.feedItems.set(
+        attachFallbackRequestStatus(filterFallbackFeed(query, kind), this.auth.currentUser()?.id),
+      );
     }
   }
 
@@ -115,7 +166,7 @@ export class CatalogStore {
 
   private addFeedItemSelection(selectedItems: FeedItem[], feedItemId: string): FeedItem[] {
     const feedItem = this.feedItems().find((item) => item.id === feedItemId);
-    if (!feedItem || feedItem.availability?.inPlex) {
+    if (!feedItem || feedItem.availability?.inPlex || feedItem.requestStatus?.approved) {
       return selectedItems;
     }
 

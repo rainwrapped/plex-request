@@ -39,7 +39,7 @@ authRoutes.get(
 
 authRoutes.get('/api/users', async (_request, response) => {
   const store = await readStore();
-  response.json(store.users.map(sanitizeUser));
+  response.json(store.users.filter((user) => !user.disabled).map(sanitizeUser));
 });
 
 authRoutes.get('/api/session', async (request, response) => {
@@ -70,7 +70,7 @@ authRoutes.post('/api/login', async (request, response) => {
   );
 
   const passwordMatches = verifyPassword(password, user?.passwordHash ?? DUMMY_PASSWORD_HASH);
-  if (!user || !passwordMatches) {
+  if (!user || user.disabled || !passwordMatches) {
     response.status(401).json({ message: 'Invalid login credentials.' });
     return;
   }

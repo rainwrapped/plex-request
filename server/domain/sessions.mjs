@@ -7,6 +7,7 @@ export function sanitizeUser(user) {
     username: user.username,
     name: user.name,
     role: user.role,
+    disabled: Boolean(user.disabled),
   };
 }
 
@@ -21,5 +22,6 @@ export function getUserBySession(store, request) {
     return null;
   }
 
-  return store.users.find((user) => user.id === session.userId) || null;
+  const user = store.users.find((candidate) => candidate.id === session.userId) || null;
+  return user?.disabled ? null : user;
 }

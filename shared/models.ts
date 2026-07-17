@@ -18,6 +18,7 @@ export interface UserAccount {
   name: string;
   role: AccountRole;
   password?: string;
+  disabled?: boolean;
 }
 
 export interface FeedAvailability {
@@ -35,7 +36,17 @@ export interface FeedItem {
   summary: string;
   tags: string[];
   tmdbId?: number;
+  posterUrl?: string;
+  backdropUrl?: string;
+  requestStatus?: FeedRequestStatus;
   availability?: FeedAvailability;
+}
+
+export interface FeedRequestStatus {
+  pending: boolean;
+  approved: boolean;
+  requestedByCurrentUser: boolean;
+  voteCount: number;
 }
 
 export interface MediaSourceLink {
@@ -51,6 +62,10 @@ export interface MediaDetails {
   overview: string;
   tagline?: string;
   runtimeMinutes?: number;
+  seasonCount?: number;
+  posterUrl?: string;
+  backdropUrl?: string;
+  trailerUrl?: string;
   genres: string[];
   cast: string[];
   imdbId?: string;
@@ -71,6 +86,7 @@ export interface RequestLineItem {
 }
 
 export type FulfillmentStatus = 'queued' | 'partial' | 'failed';
+export type RequestPriority = 'normal' | 'high';
 
 export interface FulfillmentDetail {
   itemId: string;
@@ -85,6 +101,8 @@ export interface MediaRequest {
   requestedByUserId: string;
   requestedAt: string;
   requestNote: string;
+  priority?: RequestPriority;
+  votes?: string[];
   status: RequestStatus;
   items: RequestLineItem[];
   reviewedByUserId?: string;
@@ -129,3 +147,19 @@ export interface IntegrationHealthCheck {
 }
 
 export type MediaKindFilter = 'all' | MediaKind;
+
+export type NotificationEvent =
+  | 'request-submitted'
+  | 'request-voted'
+  | 'request-approved'
+  | 'request-denied'
+  | 'fulfillment-retried';
+
+export interface NotificationLogEntry {
+  id: string;
+  createdAt: string;
+  event: NotificationEvent;
+  requestId: string;
+  actorUserId: string;
+  message: string;
+}

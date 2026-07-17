@@ -1,6 +1,15 @@
 @let feedItem = item();
 
 <article class="feed-card" [class.selected]="selected()" [class.active]="active()">
+  @if (feedItem.posterUrl) {
+    <img
+      class="poster-thumb"
+      [src]="feedItem.posterUrl"
+      [alt]="feedItem.title + ' poster'"
+      loading="lazy"
+    />
+  }
+
   <div class="feed-card-header">
     <div>
       <h3>{{ feedItem.title }}</h3>
@@ -10,6 +19,14 @@
       <span class="badge">{{ feedItem.kind | titlecase }} · {{ feedItem.year }}</span>
       @if (feedItem.availability?.inPlex) {
         <span class="badge success">Already in Plex</span>
+      }
+      @if (feedItem.requestStatus?.approved) {
+        <span class="badge success">Approved</span>
+      } @else if (feedItem.requestStatus?.pending) {
+        <span class="badge warning">
+          {{ feedItem.requestStatus?.requestedByCurrentUser ? 'Voted' : 'Requested' }}
+          · {{ feedItem.requestStatus?.voteCount ?? 1 }}
+        </span>
       }
     </div>
   </div>
@@ -31,15 +48,21 @@
       type="button"
       class="action-button"
       [class.secondary]="!selected()"
-      [disabled]="!canRequest() || feedItem.availability?.inPlex"
+      [disabled]="
+        !canRequest() || feedItem.availability?.inPlex || feedItem.requestStatus?.approved
+      "
       (click)="toggle.emit(feedItem.id)"
     >
       @if (feedItem.availability?.inPlex) {
         Already in Plex
+      } @else if (feedItem.requestStatus?.approved) {
+        Already approved
       } @else if (!canRequest()) {
         Browsing only
       } @else if (selected()) {
         Remove from request
+      } @else if (feedItem.requestStatus?.pending) {
+        Add vote
       } @else {
         Add to request
       }

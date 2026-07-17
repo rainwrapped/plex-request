@@ -1,6 +1,11 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 
-import type { FeedItem, MediaRequest, RequestLineItem, RequestStatus } from '../../../../shared/models';
+import type {
+  FeedItem,
+  MediaRequest,
+  RequestLineItem,
+  RequestStatus,
+} from '../../../../shared/models';
 
 import { ApiService } from '../api/api.service';
 import { SEEDED_REQUESTS_DATA } from '../data/seed';
@@ -23,7 +28,9 @@ export class RequestStore {
     return this.requests().filter((request) => request.requestedByUserId === currentUser.id);
   });
 
-  readonly pendingRequests = computed(() => this.requests().filter((request) => request.status === 'pending'));
+  readonly pendingRequests = computed(() =>
+    this.requests().filter((request) => request.status === 'pending'),
+  );
 
   async refresh(): Promise<void> {
     const currentUser = this.auth.currentUser();
@@ -52,6 +59,7 @@ export class RequestStore {
 
   async submit(selectedItems: FeedItem[], requestNote: string): Promise<boolean> {
     const currentUser = this.auth.currentUser();
+    const normalizedRequestNote = requestNote.trim();
 
     if (!currentUser || currentUser.role === 'viewer' || selectedItems.length === 0) {
       return false;
@@ -69,7 +77,7 @@ export class RequestStore {
     try {
       const result = await this.api.requestJson<{ request: MediaRequest }>('/api/requests', {
         method: 'POST',
-        body: JSON.stringify({ items: lineItems, requestNote }),
+        body: JSON.stringify({ items: lineItems, requestNote: normalizedRequestNote }),
       });
 
       if (!result.ok) {
@@ -84,7 +92,7 @@ export class RequestStore {
         id: this.createId('request'),
         requestedByUserId: currentUser.id,
         requestedAt: new Date().toISOString(),
-        requestNote: requestNote.trim(),
+        requestNote: normalizedRequestNote,
         status: 'pending',
         items: lineItems,
       };
@@ -102,10 +110,13 @@ export class RequestStore {
     }
 
     try {
-      const result = await this.api.requestJson<{ request: MediaRequest }>(`/api/requests/${requestId}/review`, {
-        method: 'POST',
-        body: JSON.stringify({ status, reviewNote }),
-      });
+      const result = await this.api.requestJson<{ request: MediaRequest }>(
+        `/api/requests/${requestId}/review`,
+        {
+          method: 'POST',
+          body: JSON.stringify({ status, reviewNote }),
+        },
+      );
 
       if (!result.ok) {
         return false;

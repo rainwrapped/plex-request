@@ -6,7 +6,7 @@
   },
   "scripts": {
     "ng": "ng",
-    "start": "concurrently -k -n api,web \"npm:start:api\" \"npm:start:web\"",
+    "start": "concurrently -k -n api,web \"npm run start:api\" \"npm run start:web\"",
     "start:api": "node --watch server/index.mjs",
     "start:web": "ng serve --port 4300 --proxy-config proxy.conf.json",
     "build": "ng build",

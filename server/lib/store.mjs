@@ -49,8 +49,11 @@ export async function writeStore(store) {
 }
 
 export async function updateStore(updater) {
+  await ensureStore();
+
   const nextWrite = writeQueue.then(async () => {
-    const store = await readStore();
+    const rawStore = await readFile(storeFilePath, 'utf8');
+    const store = JSON.parse(rawStore);
     const result = await updater(store);
     await mkdir(dataDirectory, { recursive: true });
     await writeFile(storeFilePath, JSON.stringify(store, null, 2));

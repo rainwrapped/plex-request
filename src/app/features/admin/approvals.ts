@@ -38,8 +38,10 @@ export class Approvals {
       [requestId]: '',
     }));
 
-    if (status === 'approved') {
-      this.adminMessage.set('Approval saved and fulfillment attempted in Radarr/Sonarr.');
-    }
+    this.adminMessage.set(
+      status === 'approved'
+        ? 'Approval saved and fulfillment attempted in Radarr/Sonarr.'
+        : 'Denial saved and the request was closed.',
+    );
   }
 }

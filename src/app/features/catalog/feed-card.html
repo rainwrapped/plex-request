@@ -1,15 +1,6 @@
 @let feedItem = item();
 
-<article
-  class="feed-card"
-  [class.selected]="selected()"
-  [class.active]="active()"
-  role="button"
-  tabindex="0"
-  (click)="open.emit(feedItem)"
-  (keydown.enter)="open.emit(feedItem)"
-  (keydown.space)="$event.preventDefault(); open.emit(feedItem)"
->
+<article class="feed-card" [class.selected]="selected()" [class.active]="active()">
   <div class="feed-card-header">
     <div>
       <h3>{{ feedItem.title }}</h3>
@@ -31,21 +22,27 @@
     }
   </div>
 
-  <button
-    type="button"
-    class="action-button"
-    [class.secondary]="!selected()"
-    [disabled]="!canRequest() || feedItem.availability?.inPlex"
-    (click)="$event.stopPropagation(); toggle.emit(feedItem.id)"
-  >
-    @if (feedItem.availability?.inPlex) {
-      Already in Plex
-    } @else if (!canRequest()) {
-      Browsing only
-    } @else if (selected()) {
-      Remove from request
-    } @else {
-      Add to request
-    }
-  </button>
+  <div class="feed-card-actions">
+    <button type="button" class="action-button secondary" (click)="open.emit(feedItem)">
+      Open details
+    </button>
+
+    <button
+      type="button"
+      class="action-button"
+      [class.secondary]="!selected()"
+      [disabled]="!canRequest() || feedItem.availability?.inPlex"
+      (click)="toggle.emit(feedItem.id)"
+    >
+      @if (feedItem.availability?.inPlex) {
+        Already in Plex
+      } @else if (!canRequest()) {
+        Browsing only
+      } @else if (selected()) {
+        Remove from request
+      } @else {
+        Add to request
+      }
+    </button>
+  </div>
 </article>

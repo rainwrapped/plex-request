@@ -26,6 +26,10 @@ function findExistingRequest(store, item) {
   );
 }
 
+function requestBelongsToUser(mediaRequest, userId) {
+  return mediaRequest.requestedByUserId === userId || (mediaRequest.votes ?? []).includes(userId);
+}
+
 function normalizePriority(priority) {
   return priority === 'high' ? 'high' : 'normal';
 }
@@ -67,8 +71,8 @@ requestRoutes.get(
     const requests =
       request.user.role === 'admin'
         ? request.store.requests
-        : request.store.requests.filter(
-            (mediaRequest) => mediaRequest.requestedByUserId === request.user.id,
+        : request.store.requests.filter((mediaRequest) =>
+            requestBelongsToUser(mediaRequest, request.user.id),
           );
 
     response.json({ requests });
@@ -93,7 +97,7 @@ requestRoutes.post(
     }
 
     const result = await updateStore((store) => {
-      const duplicateRequests = [];
+      const duplicateRequests = new Map();
       const newItems = [];
 
       for (const item of items) {
@@ -105,7 +109,7 @@ requestRoutes.post(
               request.user.id,
             ]),
           );
-          duplicateRequests.push(existingRequest);
+          duplicateRequests.set(existingRequest.id, existingRequest);
           continue;
         }
 
@@ -135,7 +139,8 @@ requestRoutes.post(
         );
       }
 
-      for (const duplicateRequest of duplicateRequests) {
+      const votedRequests = Array.from(duplicateRequests.values());
+      for (const duplicateRequest of votedRequests) {
         createNotification(
           store,
           'request-voted',
@@ -146,8 +151,8 @@ requestRoutes.post(
       }
 
       return {
-        request: nextRequest ?? duplicateRequests[0],
-        duplicateCount: duplicateRequests.length,
+        request: nextRequest ?? votedRequests[0],
+        duplicateCount: votedRequests.length,
         createdCount: newItems.length,
       };
     });
@@ -224,6 +229,16 @@ requestRoutes.post(
 
       if (existingRequest.status !== 'approved') {
         return { status: 409, message: 'Only approved requests can be retried.' };
+      }
+
+      if (
+        existingRequest.fulfillmentStatus !== 'failed' &&
+        existingRequest.fulfillmentStatus !== 'partial'
+      ) {
+        return {
+          status: 409,
+          message: 'Only failed or partially fulfilled requests can be retried.',
+        };
       }
 
       const fulfillment = await fulfillRequest(existingRequest, store.settings);

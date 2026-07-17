@@ -27,7 +27,7 @@ export class RequestStore {
       return [];
     }
 
-    return this.requests().filter((request) => request.requestedByUserId === currentUser.id);
+    return this.requests().filter((request) => this.requestBelongsToUser(request, currentUser.id));
   });
 
   readonly pendingRequests = computed(() =>
@@ -92,6 +92,11 @@ export class RequestStore {
       });
 
       if (!result.ok) {
+        this.submissionMessage.set(
+          result.data
+            ? 'Request could not be submitted. Please review the selected items and try again.'
+            : 'Request could not be submitted. Please try again.',
+        );
         return false;
       }
 
@@ -200,7 +205,11 @@ export class RequestStore {
       let updated = false;
       this.requests.update((requests) =>
         requests.map((request) => {
-          if (request.id !== requestId || request.status !== 'approved') {
+          if (
+            request.id !== requestId ||
+            request.status !== 'approved' ||
+            (request.fulfillmentStatus !== 'failed' && request.fulfillmentStatus !== 'partial')
+          ) {
             return request;
           }
 
@@ -230,7 +239,11 @@ export class RequestStore {
 
     return user.role === 'admin'
       ? SEEDED_REQUESTS_DATA
-      : SEEDED_REQUESTS_DATA.filter((request) => request.requestedByUserId === user.id);
+      : SEEDED_REQUESTS_DATA.filter((request) => this.requestBelongsToUser(request, user.id));
+  }
+
+  private requestBelongsToUser(request: MediaRequest, userId: string): boolean {
+    return request.requestedByUserId === userId || (request.votes ?? []).includes(userId);
   }
 
   private createId(prefix: string): string {

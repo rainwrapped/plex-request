@@ -22,13 +22,42 @@ describe('RequestStore', () => {
     expect(requests.currentUserRequests()).toEqual([]);
   });
 
-  it('filters current-user requests for the signed-in requestor', () => {
+  it('includes requests created by or voted on by the signed-in user', () => {
     auth.currentUser.set({ id: 'requestor-1', name: 'Riley', role: 'requestor' });
-    expect(
-      requests
-        .currentUserRequests()
-        .every((request) => request.requestedByUserId === 'requestor-1'),
-    ).toBe(true);
+    requests.requests.set([
+      {
+        id: 'owned-request',
+        requestedByUserId: 'requestor-1',
+        requestedAt: '2026-07-10T14:00:00.000Z',
+        requestNote: '',
+        status: 'pending',
+        votes: ['requestor-1'],
+        items: [],
+      },
+      {
+        id: 'voted-request',
+        requestedByUserId: 'requestor-2',
+        requestedAt: '2026-07-11T14:00:00.000Z',
+        requestNote: '',
+        status: 'pending',
+        votes: ['requestor-2', 'requestor-1'],
+        items: [],
+      },
+      {
+        id: 'other-request',
+        requestedByUserId: 'requestor-2',
+        requestedAt: '2026-07-12T14:00:00.000Z',
+        requestNote: '',
+        status: 'pending',
+        votes: ['requestor-2'],
+        items: [],
+      },
+    ]);
+
+    expect(requests.currentUserRequests().map((request) => request.id)).toEqual([
+      'owned-request',
+      'voted-request',
+    ]);
   });
 
   it('derives only pending requests for the review queue', () => {
@@ -75,6 +104,34 @@ describe('RequestStore', () => {
     expect(requests.submissionMessage()).toContain('vote was added');
   });
 
+  it('stores an error message when submit fails with a non-OK API response', async () => {
+    auth.currentUser.set({ id: 'requestor-1', name: 'Riley', role: 'requestor' });
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      new Response(JSON.stringify({ message: 'At least one catalog item is required.' }), {
+        status: 400,
+        headers: { 'content-type': 'application/json' },
+      }),
+    );
+
+    const submitted = await requests.submit(
+      [
+        {
+          id: 'feed-2',
+          title: 'Dune: Part Two',
+          kind: 'movie',
+          year: 2024,
+          feedName: '4K Movie Feed',
+          summary: 'A movie.',
+          tags: [],
+        },
+      ],
+      '',
+    );
+
+    expect(submitted).toBe(false);
+    expect(requests.submissionMessage()).toContain('could not be submitted');
+  });
+
   it('marks approved requests as failed when retrying in demo mode', async () => {
     auth.currentUser.set({ id: 'admin-1', name: 'Jordan', role: 'admin' });
     vi.spyOn(globalThis, 'fetch').mockRejectedValueOnce(new Error('offline'));
@@ -84,5 +141,23 @@ describe('RequestStore', () => {
     expect(
       requests.requests().find((request) => request.id === 'request-1000')?.fulfillmentStatus,
     ).toBe('failed');
+  });
+
+  it('does not retry queued requests in demo mode', async () => {
+    auth.currentUser.set({ id: 'admin-1', name: 'Jordan', role: 'admin' });
+    requests.requests.update((currentRequests) =>
+      currentRequests.map((request) =>
+        request.id === 'request-1000'
+          ? { ...request, fulfillmentStatus: 'queued', fulfillmentDetails: [] }
+          : request,
+      ),
+    );
+    vi.spyOn(globalThis, 'fetch').mockRejectedValueOnce(new Error('offline'));
+
+    await expect(requests.retryFulfillment('request-1000')).resolves.toBe(false);
+
+    expect(
+      requests.requests().find((request) => request.id === 'request-1000')?.fulfillmentStatus,
+    ).toBe('queued');
   });
 });

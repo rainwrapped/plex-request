@@ -96,6 +96,13 @@ adminRoutes.put(
         return { status: 409, message: 'Username is already in use.' };
       }
 
+      if (user.id === request.user.id && (payload.role !== 'admin' || payload.disabled)) {
+        return {
+          status: 400,
+          message: 'Admins cannot remove their own admin access.',
+        };
+      }
+
       user.username = payload.username;
       user.name = payload.name;
       user.role = payload.role;

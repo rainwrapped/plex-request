@@ -2,7 +2,7 @@
 
 ## Current Focus
 
-The memory bank is initialized and populated with confirmed project, architecture, stack, and workflow context.
+PR #5 review feedback has been addressed and verified locally.
 
 ## Short-Term Goals
 
@@ -16,10 +16,11 @@ The memory bank is initialized and populated with confirmed project, architectur
 - Populated product context from README-documented Plex Request Hub workflows.
 - Populated system patterns from package metadata, Angular config, frontend stores, server routes, and local persistence code.
 - Recorded Angular 22 / TypeScript 6 compatibility constraints from installed package peer dependencies.
+- Fixed PR review findings around voted request visibility, duplicate vote deduplication, retry preconditions, admin self-demotion/self-disable, and submit failure feedback.
 
 ## Last Session Status
 
-Memory bank population is complete. The repo has many pre-existing unrelated modified files; this task only changed memory-bank files and created `.github/copilot-instructions.md`.
+PR review fixes pass `npm run test` and `npm run build`.
 
 ## Next Steps
 

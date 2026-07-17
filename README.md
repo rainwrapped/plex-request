@@ -55,7 +55,7 @@ Then open `http://localhost:4300/`.
 - `npm run build` — production build
 - `npm run start:api` — run only the local API server on `http://localhost:3000`
 - `npm run start:web` — run only the Angular dev server on `http://localhost:4300`
-- `npm run test -- --watch=false` — run the Vitest test suite once
+- `npm run test` — run the Vitest test suite once
 
 ## Notes
 
@@ -63,3 +63,5 @@ Then open `http://localhost:4300/`.
 - Request approval attempts fulfillment through Radarr/Sonarr and records per-item outcomes.
 - If TMDb or Plex credentials are missing, the UI falls back to the seeded demo catalog instead of
   hard failing.
+- The seeded demo password and offline fallback are for local demos only. Set `DEFAULT_ADMIN_PASSWORD`
+  before any non-local deployment; production startup refuses the default.

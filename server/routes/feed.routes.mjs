@@ -11,7 +11,8 @@ feedRoutes.get(
   '/api/feed',
   requireAuth(async (request, response) => {
     const query = String(request.query.query ?? '');
-    const kind = request.query.kind === 'movie' || request.query.kind === 'show' ? request.query.kind : 'all';
+    const kind =
+      request.query.kind === 'movie' || request.query.kind === 'show' ? request.query.kind : 'all';
 
     try {
       const items = await buildFeed(query, kind, request.store.settings);
@@ -31,7 +32,8 @@ feedRoutes.get(
   '/api/feed/details',
   requireAuth(async (request, response) => {
     const title = String(request.query.title ?? '').trim();
-    const kind = request.query.kind === 'movie' || request.query.kind === 'show' ? request.query.kind : '';
+    const kind =
+      request.query.kind === 'movie' || request.query.kind === 'show' ? request.query.kind : '';
     const year = Number(request.query.year ?? 0);
 
     if (!title || !kind || !year) {
@@ -43,7 +45,7 @@ feedRoutes.get(
       title,
       kind,
       year,
-      summary: title,
+      summary: '',
       tmdbId: request.query.tmdbId ? Number(request.query.tmdbId) : undefined,
       tags: [],
     };

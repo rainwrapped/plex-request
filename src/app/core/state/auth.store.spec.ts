@@ -26,4 +26,12 @@ describe('AuthStore', () => {
     store.currentUser.set({ id: 'viewer-1', name: 'Avery', role: 'viewer' });
     expect(store.canRequest()).toBe(false);
   });
+
+  it('matches demo fallback usernames case-insensitively', async () => {
+    vi.spyOn(globalThis, 'fetch').mockRejectedValueOnce(new Error('offline'));
+
+    await expect(store.login('Admin', 'plex-demo')).resolves.toBe(true);
+
+    expect(store.currentUser()?.id).toBe('admin-1');
+  });
 });

@@ -1,10 +1,27 @@
 import { Router } from 'express';
 
 import { requireAdmin, requireAuth } from '../middleware/auth.mjs';
-import { writeStore } from '../lib/store.mjs';
+import { updateStore } from '../lib/store.mjs';
 import { fulfillRequest } from '../services/downloaders.mjs';
 
 export const requestRoutes = Router();
+
+function normalizeRequestItems(items) {
+  if (!Array.isArray(items) || items.length === 0 || items.length > 20) {
+    return [];
+  }
+
+  return items
+    .map((item) => ({
+      id: String(item?.id ?? '').trim(),
+      title: String(item?.title ?? '').trim(),
+      kind: item?.kind === 'movie' || item?.kind === 'show' ? item.kind : '',
+      year: Number(item?.year ?? 0),
+      feedName: String(item?.feedName ?? '').trim(),
+      tmdbId: item?.tmdbId ? Number(item.tmdbId) : undefined,
+    }))
+    .filter((item) => item.id && item.title && item.kind && item.year > 0 && item.feedName);
+}
 
 requestRoutes.get(
   '/api/requests',
@@ -12,7 +29,9 @@ requestRoutes.get(
     const requests =
       request.user.role === 'admin'
         ? request.store.requests
-        : request.store.requests.filter((mediaRequest) => mediaRequest.requestedByUserId === request.user.id);
+        : request.store.requests.filter(
+            (mediaRequest) => mediaRequest.requestedByUserId === request.user.id,
+          );
 
     response.json({ requests });
   }),
@@ -26,7 +45,7 @@ requestRoutes.post(
       return;
     }
 
-    const items = Array.isArray(request.body?.items) ? request.body.items : [];
+    const items = normalizeRequestItems(request.body?.items);
     const requestNote = String(request.body?.requestNote ?? '').trim();
 
     if (items.length === 0) {
@@ -43,8 +62,9 @@ requestRoutes.post(
       items,
     };
 
-    request.store.requests = [nextRequest, ...request.store.requests];
-    await writeStore(request.store);
+    await updateStore((store) => {
+      store.requests = [nextRequest, ...store.requests];
+    });
 
     response.status(201).json({ request: nextRequest });
   }),
@@ -60,32 +80,38 @@ requestRoutes.post(
       return;
     }
 
-    const existingRequest = request.store.requests.find(
-      (mediaRequest) => mediaRequest.id === request.params.requestId,
-    );
+    const reviewResult = await updateStore(async (store) => {
+      const existingRequest = store.requests.find(
+        (mediaRequest) => mediaRequest.id === request.params.requestId,
+      );
 
-    if (!existingRequest) {
-      response.status(404).json({ message: 'Request not found.' });
+      if (!existingRequest) {
+        return { status: 404, message: 'Request not found.' };
+      }
+
+      if (existingRequest.status !== 'pending') {
+        return { status: 409, message: 'That request has already been reviewed.' };
+      }
+
+      existingRequest.status = status;
+      existingRequest.reviewedAt = new Date().toISOString();
+      existingRequest.reviewedByUserId = request.user.id;
+      existingRequest.reviewNote = reviewNote;
+
+      if (status === 'approved') {
+        const fulfillment = await fulfillRequest(existingRequest, store.settings);
+        existingRequest.fulfillmentStatus = fulfillment.fulfillmentStatus;
+        existingRequest.fulfillmentDetails = fulfillment.fulfillmentDetails;
+      }
+
+      return { status: 200, request: existingRequest };
+    });
+
+    if (!reviewResult.request) {
+      response.status(reviewResult.status).json({ message: reviewResult.message });
       return;
     }
 
-    if (existingRequest.status !== 'pending') {
-      response.status(409).json({ message: 'That request has already been reviewed.' });
-      return;
-    }
-
-    existingRequest.status = status;
-    existingRequest.reviewedAt = new Date().toISOString();
-    existingRequest.reviewedByUserId = request.user.id;
-    existingRequest.reviewNote = reviewNote;
-
-    if (status === 'approved') {
-      const fulfillment = await fulfillRequest(existingRequest, request.store.settings);
-      existingRequest.fulfillmentStatus = fulfillment.fulfillmentStatus;
-      existingRequest.fulfillmentDetails = fulfillment.fulfillmentDetails;
-    }
-
-    await writeStore(request.store);
-    response.json({ request: existingRequest });
+    response.json({ request: reviewResult.request });
   }),
 );

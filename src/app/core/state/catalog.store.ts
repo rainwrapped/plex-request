@@ -81,7 +81,9 @@ export class CatalogStore {
       params.set('query', query);
       params.set('kind', kind);
 
-      const result = await this.api.requestJson<{ items: FeedItem[] }>(`/api/feed?${params.toString()}`);
+      const result = await this.api.requestJson<{ items: FeedItem[] }>(
+        `/api/feed?${params.toString()}`,
+      );
       if (!result.ok || !result.data) {
         throw new Error('Feed request failed.');
       }
@@ -104,16 +106,20 @@ export class CatalogStore {
       return;
     }
 
-    const feedItem = this.feedItems().find((item) => item.id === feedItemId);
-    if (!feedItem || feedItem.availability?.inPlex) {
-      return;
-    }
-
     this.selectedFeedItems.update((selectedItems) =>
       selectedItems.some((selectedItem) => selectedItem.id === feedItemId)
         ? selectedItems.filter((selectedItem) => selectedItem.id !== feedItemId)
-        : [...selectedItems, feedItem],
+        : this.addFeedItemSelection(selectedItems, feedItemId),
     );
+  }
+
+  private addFeedItemSelection(selectedItems: FeedItem[], feedItemId: string): FeedItem[] {
+    const feedItem = this.feedItems().find((item) => item.id === feedItemId);
+    if (!feedItem || feedItem.availability?.inPlex) {
+      return selectedItems;
+    }
+
+    return [...selectedItems, feedItem];
   }
 
   clearSelection(): void {
@@ -130,7 +136,9 @@ export class CatalogStore {
     }
 
     try {
-      const result = await this.api.requestJson<MediaDetails>(`/api/feed/details?${params.toString()}`);
+      const result = await this.api.requestJson<MediaDetails>(
+        `/api/feed/details?${params.toString()}`,
+      );
       if (!result.ok || !result.data) {
         throw new Error('Details request failed.');
       }

@@ -2,8 +2,12 @@ export function getEnvironmentStatus(settings) {
   return {
     tmdbConfigured: Boolean(settings.tmdb.apiKey || settings.tmdb.readAccessToken),
     plexConfigured: Boolean(settings.plex.baseUrl && settings.plex.token),
-    radarrConfigured: Boolean(settings.radarr.enabled && settings.radarr.baseUrl && settings.radarr.apiKey),
-    sonarrConfigured: Boolean(settings.sonarr.enabled && settings.sonarr.baseUrl && settings.sonarr.apiKey),
+    radarrConfigured: Boolean(
+      settings.radarr.enabled && settings.radarr.baseUrl && settings.radarr.apiKey,
+    ),
+    sonarrConfigured: Boolean(
+      settings.sonarr.enabled && settings.sonarr.baseUrl && settings.sonarr.apiKey,
+    ),
   };
 }
 
@@ -30,11 +34,38 @@ export function sanitizeSettings(settings) {
   };
 }
 
+const MASKED_SECRET = '***configured***';
+
+function normalizeSecret(currentValue, updatedValue) {
+  if (updatedValue === undefined) {
+    return currentValue;
+  }
+
+  const normalizedValue = String(updatedValue).trim();
+  return normalizedValue === MASKED_SECRET ? currentValue : normalizedValue;
+}
+
+function normalizeBaseUrl(currentValue, updatedValue) {
+  const normalizedValue = String(updatedValue ?? currentValue).trim();
+  if (!normalizedValue) {
+    return '';
+  }
+
+  try {
+    const url = new URL(normalizedValue);
+    return url.protocol === 'http:' || url.protocol === 'https:'
+      ? url.toString().replace(/\/$/, '')
+      : '';
+  } catch {
+    return '';
+  }
+}
+
 function normalizeServiceConfig(current, updates) {
   return {
     enabled: Boolean(updates?.enabled ?? current.enabled),
-    baseUrl: String(updates?.baseUrl ?? current.baseUrl).trim(),
-    apiKey: String(updates?.apiKey ?? current.apiKey).trim(),
+    baseUrl: normalizeBaseUrl(current.baseUrl, updates?.baseUrl),
+    apiKey: normalizeSecret(current.apiKey, updates?.apiKey),
     rootFolderPath: String(updates?.rootFolderPath ?? current.rootFolderPath).trim(),
     qualityProfileId: Number(updates?.qualityProfileId ?? current.qualityProfileId) || 1,
     languageProfileId: Number(updates?.languageProfileId ?? current.languageProfileId) || 1,
@@ -44,14 +75,18 @@ function normalizeServiceConfig(current, updates) {
 export function normalizeSettings(current, updates) {
   return {
     plex: {
-      baseUrl: String(updates?.plex?.baseUrl ?? current.plex.baseUrl).trim(),
-      token: String(updates?.plex?.token ?? current.plex.token).trim(),
+      baseUrl: normalizeBaseUrl(current.plex.baseUrl, updates?.plex?.baseUrl),
+      token: normalizeSecret(current.plex.token, updates?.plex?.token),
       clientIdentifier:
-        String(updates?.plex?.clientIdentifier ?? current.plex.clientIdentifier).trim() || 'plex-request-hub',
+        String(updates?.plex?.clientIdentifier ?? current.plex.clientIdentifier).trim() ||
+        'plex-request-hub',
     },
     tmdb: {
-      apiKey: String(updates?.tmdb?.apiKey ?? current.tmdb.apiKey).trim(),
-      readAccessToken: String(updates?.tmdb?.readAccessToken ?? current.tmdb.readAccessToken).trim(),
+      apiKey: normalizeSecret(current.tmdb.apiKey, updates?.tmdb?.apiKey),
+      readAccessToken: normalizeSecret(
+        current.tmdb.readAccessToken,
+        updates?.tmdb?.readAccessToken,
+      ),
     },
     radarr: {
       ...normalizeServiceConfig(current.radarr, updates?.radarr),

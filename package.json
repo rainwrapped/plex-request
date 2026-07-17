@@ -11,7 +11,7 @@
     "start:web": "ng serve --port 4300 --proxy-config proxy.conf.json",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "vitest run"
   },
   "private": true,
   "packageManager": "npm@11.17.0",

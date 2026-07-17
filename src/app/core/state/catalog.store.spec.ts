@@ -31,6 +31,17 @@ describe('CatalogStore', () => {
     expect(catalog.isSelected(first.id)).toBe(false);
   });
 
+  it('removes selected items even when they are no longer in the current feed', () => {
+    auth.currentUser.set({ id: 'requestor-1', name: 'Riley', role: 'requestor' });
+    const first = catalog.feedItems()[0];
+
+    catalog.toggleSelection(first.id);
+    catalog.feedItems.set(catalog.feedItems().filter((item) => item.id !== first.id));
+    catalog.toggleSelection(first.id);
+
+    expect(catalog.isSelected(first.id)).toBe(false);
+  });
+
   it('clears the whole selection', () => {
     auth.currentUser.set({ id: 'requestor-1', name: 'Riley', role: 'requestor' });
     catalog.toggleSelection(catalog.feedItems()[0].id);

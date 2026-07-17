@@ -64,7 +64,11 @@ export class AuthStore {
       this.currentUser.set(result.data.user);
       return true;
     } catch {
-      const user = DEMO_USERS.find((candidate) => candidate.username === username || candidate.id === username);
+      const normalizedUsername = username.trim().toLowerCase();
+      const user = DEMO_USERS.find(
+        (candidate) =>
+          candidate.username === normalizedUsername || candidate.id === normalizedUsername,
+      );
       if (!user || user.password !== password.trim()) {
         return false;
       }

@@ -3,6 +3,8 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dataDirectory, storeFilePath } from '../config.mjs';
 import { seededRequests, seededSettings, seededUsers } from '../data/seed.mjs';
 
+let writeQueue = Promise.resolve();
+
 export async function ensureStore() {
   await mkdir(dataDirectory, { recursive: true });
 
@@ -38,5 +40,25 @@ export async function readStore() {
 
 export async function writeStore(store) {
   await mkdir(dataDirectory, { recursive: true });
-  await writeFile(storeFilePath, JSON.stringify(store, null, 2));
+  const nextWrite = writeQueue.then(() => writeFile(storeFilePath, JSON.stringify(store, null, 2)));
+  writeQueue = nextWrite.then(
+    () => undefined,
+    () => undefined,
+  );
+  await nextWrite;
+}
+
+export async function updateStore(updater) {
+  const nextWrite = writeQueue.then(async () => {
+    const store = await readStore();
+    const result = await updater(store);
+    await mkdir(dataDirectory, { recursive: true });
+    await writeFile(storeFilePath, JSON.stringify(store, null, 2));
+    return result;
+  });
+  writeQueue = nextWrite.then(
+    () => undefined,
+    () => undefined,
+  );
+  return nextWrite;
 }

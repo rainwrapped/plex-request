@@ -1,5 +1,12 @@
 import { isProduction, sessionCookieName, sessionTtlMs } from '../config.mjs';
 
+const sessionCookieOptions = {
+  httpOnly: true,
+  sameSite: 'strict',
+  secure: isProduction,
+  path: '/',
+};
+
 export function getCookieValue(request, key) {
   const rawCookies = String(request.headers.cookie || '');
   const parts = rawCookies.split(';');
@@ -15,14 +22,11 @@ export function getCookieValue(request, key) {
 
 export function writeSessionCookie(response, sessionId) {
   response.cookie(sessionCookieName, sessionId, {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: isProduction,
+    ...sessionCookieOptions,
     maxAge: sessionTtlMs,
-    path: '/',
   });
 }
 
 export function clearSessionCookie(response) {
-  response.clearCookie(sessionCookieName, { path: '/' });
+  response.clearCookie(sessionCookieName, sessionCookieOptions);
 }

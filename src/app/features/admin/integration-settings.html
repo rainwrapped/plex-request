@@ -46,7 +46,9 @@
       <span>Radarr enabled</span>
       <select
         [ngModel]="settingsForm().radarr.enabled"
-        (ngModelChange)="updateSettingsField('radarr', 'enabled', $event === true || $event === 'true')"
+        (ngModelChange)="
+          updateSettingsField('radarr', 'enabled', $event === true || $event === 'true')
+        "
       >
         <option [ngValue]="true">Enabled</option>
         <option [ngValue]="false">Disabled</option>
@@ -88,7 +90,9 @@
       <span>Sonarr enabled</span>
       <select
         [ngModel]="settingsForm().sonarr.enabled"
-        (ngModelChange)="updateSettingsField('sonarr', 'enabled', $event === true || $event === 'true')"
+        (ngModelChange)="
+          updateSettingsField('sonarr', 'enabled', $event === true || $event === 'true')
+        "
       >
         <option [ngValue]="true">Enabled</option>
         <option [ngValue]="false">Disabled</option>
@@ -137,8 +141,12 @@
   </div>
 
   <div class="actions-row">
-    <button type="button" class="action-button" [disabled]="savingSettings()" (click)="save()">Save settings</button>
-    <button type="button" class="action-button secondary" (click)="runHealthCheck()">Run health check</button>
+    <button type="button" class="action-button" [disabled]="savingSettings()" (click)="save()">
+      Save settings
+    </button>
+    <button type="button" class="action-button secondary" (click)="runHealthCheck()">
+      Run health check
+    </button>
   </div>
 
   @if (adminMessage()) {
@@ -148,7 +156,10 @@
   @if (integrationHealth().length) {
     <ul class="request-items">
       @for (check of integrationHealth(); track check.name) {
-        <li>{{ check.name | titlecase }} · {{ check.ok ? 'Healthy' : 'Unhealthy' }} · {{ check.message }}</li>
+        <li>
+          {{ check.name | titlecase }} · {{ check.ok ? 'Healthy' : 'Unhealthy' }} ·
+          {{ check.message }}
+        </li>
       }
     </ul>
   }

@@ -36,6 +36,18 @@
       ></textarea>
     </label>
 
+    <label class="field">
+      <span>Priority</span>
+      <select
+        [ngModel]="priority()"
+        (ngModelChange)="updatePriority($event)"
+        aria-label="Request priority"
+      >
+        <option value="normal">Normal</option>
+        <option value="high">High</option>
+      </select>
+    </label>
+
     <button
       type="button"
       class="action-button"

@@ -51,7 +51,9 @@ export class SettingsStore {
     }
 
     try {
-      const result = await this.api.requestJson<{ settings: IntegrationSettings }>('/api/admin/settings');
+      const result = await this.api.requestJson<{ settings: IntegrationSettings }>(
+        '/api/admin/settings',
+      );
       if (result.ok && result.data) {
         this.api.markOnline();
         this.settings.set(result.data.settings);
@@ -70,10 +72,13 @@ export class SettingsStore {
     this.savingSettings.set(true);
 
     try {
-      const result = await this.api.requestJson<{ settings: IntegrationSettings }>('/api/admin/settings', {
-        method: 'PUT',
-        body: JSON.stringify({ settings }),
-      });
+      const result = await this.api.requestJson<{ settings: IntegrationSettings }>(
+        '/api/admin/settings',
+        {
+          method: 'PUT',
+          body: JSON.stringify({ settings }),
+        },
+      );
 
       if (!result.ok || !result.data) {
         return false;
@@ -97,7 +102,9 @@ export class SettingsStore {
     }
 
     try {
-      const result = await this.api.requestJson<{ checks: IntegrationHealthCheck[] }>('/api/admin/health');
+      const result = await this.api.requestJson<{ checks: IntegrationHealthCheck[] }>(
+        '/api/admin/health',
+      );
       if (!result.data) {
         return false;
       }

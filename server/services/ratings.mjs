@@ -56,7 +56,9 @@ export async function resolveRottenTomatoesScore(item) {
     const start = Math.max(0, titleIndex - 240);
     const end = Math.min(text.length, titleIndex + 240);
     const window = text.slice(start, end);
-    const scoreMatch = window.match(/(Certified fresh score|Fresh score|Rotten score|No score yet)\.\s*(\d+%|--)/i);
+    const scoreMatch = window.match(
+      /(Certified fresh score|Fresh score|Rotten score|No score yet)\.\s*(\d+%|--)/i,
+    );
 
     if (!scoreMatch) {
       return { rottenTomatoesUrl: searchUrl };
@@ -79,22 +81,41 @@ export async function buildMediaDetails(item, settings) {
 
   const imdbId = tmdbDetails.external_ids?.imdb_id || '';
   const genreNames = Array.isArray(tmdbDetails.genres)
-    ? tmdbDetails.genres.map((genre) => genre.name).filter(Boolean).slice(0, 4)
+    ? tmdbDetails.genres
+        .map((genre) => genre.name)
+        .filter(Boolean)
+        .slice(0, 4)
     : [];
   const cast = Array.isArray(tmdbDetails.credits?.cast)
-    ? tmdbDetails.credits.cast.map((member) => member.name).filter(Boolean).slice(0, 6)
+    ? tmdbDetails.credits.cast
+        .map((member) => member.name)
+        .filter(Boolean)
+        .slice(0, 6)
     : [];
   const runtime = item.kind === 'movie' ? tmdbDetails.runtime : tmdbDetails.episode_run_time?.[0];
   const rottenTomatoes = await resolveRottenTomatoesScore(item);
   const imdbUrl = imdbId ? `https://www.imdb.com/title/${imdbId}/` : buildImdbSearchUrl(item);
+  const trailer = (tmdbDetails.videos?.results ?? []).find(
+    (video) => video.site === 'YouTube' && video.type === 'Trailer',
+  );
 
   return {
     title: item.kind === 'movie' ? tmdbDetails.title || item.title : tmdbDetails.name || item.title,
     kind: item.kind,
     year: item.year,
-    overview: tmdbDetails.overview || item.summary || 'No overview is available for this title yet.',
+    overview:
+      tmdbDetails.overview || item.summary || 'No overview is available for this title yet.',
     tagline: tmdbDetails.tagline || '',
     runtimeMinutes: Number(runtime || 0) || undefined,
+    seasonCount:
+      item.kind === 'show' ? Number(tmdbDetails.number_of_seasons || 0) || undefined : undefined,
+    posterUrl: tmdbDetails.poster_path
+      ? `https://image.tmdb.org/t/p/w342${tmdbDetails.poster_path}`
+      : item.posterUrl,
+    backdropUrl: tmdbDetails.backdrop_path
+      ? `https://image.tmdb.org/t/p/w780${tmdbDetails.backdrop_path}`
+      : item.backdropUrl,
+    trailerUrl: trailer?.key ? `https://www.youtube.com/watch?v=${trailer.key}` : undefined,
     genres: genreNames,
     cast,
     imdbId: imdbId || undefined,
@@ -105,7 +126,9 @@ export async function buildMediaDetails(item, settings) {
       {
         label: 'IMDb source',
         url: imdbUrl,
-        note: imdbId ? `IMDb title page for ${imdbId}.` : 'Search IMDb for the matching title page.',
+        note: imdbId
+          ? `IMDb title page for ${imdbId}.`
+          : 'Search IMDb for the matching title page.',
       },
       {
         label: 'Rotten Tomatoes reviews',

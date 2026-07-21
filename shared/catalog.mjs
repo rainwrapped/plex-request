@@ -16,6 +16,7 @@ export const FEED_ITEMS = [
     feedName: 'Apple TV+ Highlights',
     summary: 'A workplace mystery series with a strong weekly demand signal.',
     tags: ['sci-fi', 'thriller', 'trending'],
+    posterUrl: 'https://image.tmdb.org/t/p/w342/pPHpeI2X1qEd1CS1SeyrdhZ4qnT.jpg',
   },
   {
     id: 'feed-2',
@@ -26,6 +27,7 @@ export const FEED_ITEMS = [
     summary: 'Recent blockbuster release sourced from a premium movie feed.',
     tags: ['4k', 'action', 'popular'],
     tmdbId: 693134,
+    posterUrl: 'https://image.tmdb.org/t/p/w342/1pdfLvkbY9ohJlCjQH2CZjjYVvJ.jpg',
   },
   {
     id: 'feed-3',
@@ -35,6 +37,7 @@ export const FEED_ITEMS = [
     feedName: 'Prestige TV Feed',
     summary: 'High-engagement comedy-drama with strong binge potential.',
     tags: ['comedy', 'drama', 'award-winning'],
+    posterUrl: 'https://image.tmdb.org/t/p/w342/sHFlbKS3WLqMnp9t2ghADIJFnuQ.jpg',
   },
   {
     id: 'feed-4',
@@ -45,6 +48,7 @@ export const FEED_ITEMS = [
     summary: 'Animated feature catalog feed with family-friendly titles.',
     tags: ['animation', 'family', 'featured'],
     tmdbId: 569094,
+    posterUrl: 'https://image.tmdb.org/t/p/w342/8Vt6mWEReuy4Of61Lnj5Xj704m8.jpg',
   },
   {
     id: 'feed-5',
@@ -55,6 +59,7 @@ export const FEED_ITEMS = [
     summary: 'Post-apocalyptic mystery series frequently requested by sci-fi fans.',
     tags: ['mystery', 'sci-fi'],
     tmdbId: 125988,
+    posterUrl: 'https://image.tmdb.org/t/p/w342/2l05cFWJacyIsTpsqSgH0wQXe4V.jpg',
   },
   {
     id: 'feed-6',
@@ -64,6 +69,7 @@ export const FEED_ITEMS = [
     feedName: 'Awards Circuit Feed',
     summary: 'Critically acclaimed film often requested for curated collections.',
     tags: ['award-winning', 'drama'],
+    posterUrl: 'https://image.tmdb.org/t/p/w342/kCGlIMHnOm8JPXq3rXM6c5wMxcT.jpg',
   },
 ];
 
@@ -74,6 +80,8 @@ export const SEEDED_REQUESTS = [
     requestedByUserId: 'requestor-1',
     requestedAt: '2026-07-10T14:00:00.000Z',
     requestNote: 'Please grab both when they are available in the best quality possible.',
+    priority: 'high',
+    votes: ['requestor-1'],
     status: 'pending',
     items: [
       {
@@ -99,6 +107,8 @@ export const SEEDED_REQUESTS = [
     requestedByUserId: 'requestor-1',
     requestedAt: '2026-07-08T09:30:00.000Z',
     requestNote: 'Adding this for movie night.',
+    priority: 'normal',
+    votes: ['requestor-1', 'viewer-1'],
     status: 'approved',
     reviewedByUserId: 'admin-1',
     reviewedAt: '2026-07-08T12:15:00.000Z',

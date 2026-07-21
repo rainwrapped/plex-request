@@ -36,7 +36,10 @@ async function queueRadarr(item, settings) {
 
   if (!response.ok) {
     const message = await response.text();
-    return { status: 'failed', message: `Radarr rejected request (${response.status}): ${message.slice(0, 180)}` };
+    return {
+      status: 'failed',
+      message: `Radarr rejected request (${response.status}): ${message.slice(0, 180)}`,
+    };
   }
 
   return { status: 'queued', message: 'Queued in Radarr.' };
@@ -59,7 +62,10 @@ async function queueSonarr(item, settings) {
 
   if (!lookupResponse.ok) {
     const message = await lookupResponse.text();
-    return { status: 'failed', message: `Sonarr lookup failed (${lookupResponse.status}): ${message.slice(0, 180)}` };
+    return {
+      status: 'failed',
+      message: `Sonarr lookup failed (${lookupResponse.status}): ${message.slice(0, 180)}`,
+    };
   }
 
   const lookupResults = await lookupResponse.json();
@@ -87,7 +93,10 @@ async function queueSonarr(item, settings) {
 
   if (!queueResponse.ok) {
     const message = await queueResponse.text();
-    return { status: 'failed', message: `Sonarr rejected request (${queueResponse.status}): ${message.slice(0, 180)}` };
+    return {
+      status: 'failed',
+      message: `Sonarr rejected request (${queueResponse.status}): ${message.slice(0, 180)}`,
+    };
   }
 
   return { status: 'queued', message: 'Queued in Sonarr.' };

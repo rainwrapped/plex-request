@@ -27,9 +27,53 @@ function attachAvailability(items, settings) {
   );
 }
 
-export async function buildFeed(query, kind, settings) {
+function requestItemMatches(left, right) {
+  if (left.tmdbId && right.tmdbId && Number(left.tmdbId) === Number(right.tmdbId)) {
+    return true;
+  }
+
+  return (
+    left.kind === right.kind &&
+    Number(left.year) === Number(right.year) &&
+    left.title.trim().toLowerCase() === right.title.trim().toLowerCase()
+  );
+}
+
+function attachRequestStatus(items, requests, currentUserId) {
+  return items.map((item) => {
+    const matches = requests.filter(
+      (request) =>
+        request.status !== 'denied' &&
+        request.items.some((requestItem) => requestItemMatches(requestItem, item)),
+    );
+
+    if (matches.length === 0) {
+      return item;
+    }
+
+    const votes = new Set(
+      matches.flatMap((request) => request.votes ?? [request.requestedByUserId]),
+    );
+    return {
+      ...item,
+      requestStatus: {
+        pending: matches.some((request) => request.status === 'pending'),
+        approved: matches.some((request) => request.status === 'approved'),
+        requestedByCurrentUser: matches.some(
+          (request) =>
+            request.requestedByUserId === currentUserId ||
+            (request.votes ?? []).includes(currentUserId),
+        ),
+        voteCount: votes.size,
+      },
+    };
+  });
+}
+
+export async function buildFeed(query, kind, settings, requests = [], currentUserId = '') {
   if (!getEnvironmentStatus(settings).tmdbConfigured) {
-    return attachAvailability(filterFallbackFeed(query, kind), settings);
+    const items = await attachAvailability(filterFallbackFeed(query, kind), settings);
+    return attachRequestStatus(items, requests, currentUserId);
   }
 
   const requestedKinds = kind === 'all' ? ['movie', 'show'] : [kind];
@@ -41,5 +85,6 @@ export async function buildFeed(query, kind, settings) {
     .sort((left, right) => Number(right.popularity ?? 0) - Number(left.popularity ?? 0))
     .slice(0, 16);
 
-  return attachAvailability(mergedResults, settings);
+  const items = await attachAvailability(mergedResults, settings);
+  return attachRequestStatus(items, requests, currentUserId);
 }

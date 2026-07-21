@@ -1,7 +1,7 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 
 import { dataDirectory, storeFilePath } from '../config.mjs';
-import { seededRequests, seededSettings, seededUsers } from '../data/seed.mjs';
+import { seededNotifications, seededRequests, seededSettings, seededUsers } from '../data/seed.mjs';
 
 let writeQueue = Promise.resolve();
 
@@ -18,6 +18,10 @@ export async function ensureStore() {
       Array.isArray(parsed.sessions) &&
       parsed.settings
     ) {
+      if (!Array.isArray(parsed.notifications)) {
+        parsed.notifications = [];
+        await writeStore(parsed);
+      }
       return;
     }
 
@@ -27,6 +31,7 @@ export async function ensureStore() {
       requests: seededRequests,
       users: seededUsers,
       sessions: [],
+      notifications: seededNotifications,
       settings: seededSettings,
     });
   }

@@ -2,12 +2,37 @@
   <div class="section-header">
     <div>
       <p class="eyebrow">Request history</p>
-      <h2>My submitted requests</h2>
+      <h2>{{ isAdmin() && !compact() ? 'All submitted requests' : 'My requests' }}</h2>
     </div>
   </div>
 
+  @if (!compact()) {
+    <div class="filters">
+      <label class="field">
+        <span>Status</span>
+        <select [ngModel]="statusFilter()" (ngModelChange)="updateStatusFilter($event)">
+          <option value="all">All</option>
+          <option value="pending">Pending</option>
+          <option value="approved">Approved</option>
+          <option value="denied">Denied</option>
+        </select>
+      </label>
+
+      <label class="field">
+        <span>Fulfillment</span>
+        <select [ngModel]="fulfillmentFilter()" (ngModelChange)="updateFulfillmentFilter($event)">
+          <option value="all">All</option>
+          <option value="queued">Queued</option>
+          <option value="partial">Partial</option>
+          <option value="failed">Failed</option>
+          <option value="none">Not attempted</option>
+        </select>
+      </label>
+    </div>
+  }
+
   <div class="request-stack">
-    @for (request of currentUserRequests(); track request.id) {
+    @for (request of visibleRequests(); track request.id) {
       <article class="request-card">
         <div class="feed-card-header">
           <div>
@@ -19,6 +44,15 @@
             [class.status-approved]="request.status === 'approved'"
             [class.status-denied]="request.status === 'denied'"
             >{{ request.status | titlecase }}</span
+          >
+        </div>
+
+        <div class="badges">
+          <span class="badge role">{{ request.priority || 'normal' }} priority</span>
+          <span class="badge muted"
+            >{{ request.votes?.length || 1 }} vote{{
+              (request.votes?.length || 1) === 1 ? '' : 's'
+            }}</span
           >
         </div>
 
@@ -37,13 +71,16 @@
         }
 
         @if (request.fulfillmentStatus) {
-          <p class="detail-copy"><strong>Fulfillment:</strong> {{ request.fulfillmentStatus | titlecase }}</p>
+          <p class="detail-copy">
+            <strong>Fulfillment:</strong> {{ request.fulfillmentStatus | titlecase }}
+          </p>
         }
         @if (request.fulfillmentDetails?.length) {
           <ul class="request-items">
             @for (detail of request.fulfillmentDetails; track detail.itemId + detail.target) {
               <li>
-                {{ detail.itemTitle }} · {{ detail.target | titlecase }} · {{ detail.status | titlecase }}
+                {{ detail.itemTitle }} · {{ detail.target | titlecase }} ·
+                {{ detail.status | titlecase }}
                 @if (detail.message) {
                   - {{ detail.message }}
                 }
@@ -51,9 +88,19 @@
             }
           </ul>
         }
+
+        @if (
+          isAdmin() &&
+          request.status === 'approved' &&
+          (request.fulfillmentStatus === 'failed' || request.fulfillmentStatus === 'partial')
+        ) {
+          <button type="button" class="action-button secondary" (click)="retry(request.id)">
+            Retry fulfillment
+          </button>
+        }
       </article>
     } @empty {
-      <p class="empty-copy">No requests submitted from this account yet.</p>
+      <p class="empty-copy">No requests match the current filters.</p>
     }
   </div>
 </section>

@@ -51,7 +51,9 @@ export class IntegrationSettingsPanel {
 
   protected async save(): Promise<void> {
     const updated = await this.settings.save(this.settingsForm());
-    this.adminMessage.set(updated ? 'Integration settings saved.' : 'Unable to save integration settings.');
+    this.adminMessage.set(
+      updated ? 'Integration settings saved.' : 'Unable to save integration settings.',
+    );
     if (updated) {
       this.settingsForm.set(this.settings.settings());
     }

@@ -1,4 +1,9 @@
-import { DEMO_ACCOUNTS, DEMO_PASSWORD, FEED_ITEMS, SEEDED_REQUESTS } from '../../../../shared/catalog.mjs';
+import {
+  DEMO_ACCOUNTS,
+  DEMO_PASSWORD,
+  FEED_ITEMS,
+  SEEDED_REQUESTS,
+} from '../../../../shared/catalog.mjs';
 import type { FeedItem, MediaRequest, UserAccount } from '../../../../shared/models';
 
 /** Demo accounts with the shared demo password attached for offline login. */

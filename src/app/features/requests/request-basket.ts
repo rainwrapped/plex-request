@@ -2,6 +2,8 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { TitleCasePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
+import type { RequestPriority } from '../../../../shared/models';
+
 import { AuthStore } from '../../core/state/auth.store';
 import { CatalogStore } from '../../core/state/catalog.store';
 import { RequestStore } from '../../core/state/request.store';
@@ -20,7 +22,8 @@ export class RequestBasket {
   protected readonly selectedFeedItems = this.catalog.selectedFeedItems;
   protected readonly canRequest = this.auth.canRequest;
   protected readonly requestNote = signal('');
-  protected readonly submissionMessage = signal('');
+  protected readonly priority = signal<RequestPriority>('normal');
+  protected readonly submissionMessage = this.requests.submissionMessage;
 
   protected removeItem(feedItemId: string): void {
     this.catalog.toggleSelection(feedItemId);
@@ -31,14 +34,22 @@ export class RequestBasket {
     this.requestNote.set(value);
   }
 
+  protected updatePriority(value: string): void {
+    this.priority.set(value === 'high' ? 'high' : 'normal');
+  }
+
   protected async submit(): Promise<void> {
-    const submitted = await this.requests.submit(this.selectedFeedItems(), this.requestNote());
+    const submitted = await this.requests.submit(
+      this.selectedFeedItems(),
+      this.requestNote(),
+      this.priority(),
+    );
     if (!submitted) {
       return;
     }
 
     this.catalog.clearSelection();
     this.requestNote.set('');
-    this.submissionMessage.set('Request submitted for admin review.');
+    this.priority.set('normal');
   }
 }

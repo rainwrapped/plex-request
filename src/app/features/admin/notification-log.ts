@@ -17,8 +17,8 @@ export class NotificationLog implements OnInit {
   protected readonly notifications = signal<NotificationLogEntry[]>([]);
   protected readonly adminMessage = signal('');
 
-  async ngOnInit(): Promise<void> {
-    await this.refresh();
+  ngOnInit(): void {
+    void this.refresh();
   }
 
   protected async refresh(): Promise<void> {
@@ -31,6 +31,7 @@ export class NotificationLog implements OnInit {
         return;
       }
 
+      this.api.markOnline();
       this.notifications.set(result.data.notifications);
       this.adminMessage.set('');
     } catch {

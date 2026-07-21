@@ -38,8 +38,8 @@ export class UserManagement implements OnInit {
   protected readonly form = signal<UserForm>({ ...EMPTY_FORM });
   protected readonly adminMessage = signal('');
 
-  async ngOnInit(): Promise<void> {
-    await this.auth.loadAdminUsers();
+  ngOnInit(): void {
+    void this.auth.loadAdminUsers();
   }
 
   protected edit(user: UserAccount): void {

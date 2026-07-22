@@ -7,12 +7,21 @@ import { buildFeed } from '../services/catalog.mjs';
 
 export const recommendationRoutes = Router();
 
+const MAX_QUERY_LENGTH = 500;
+
 recommendationRoutes.post(
   '/api/recommendations',
   requireAuth(async (request, response) => {
     const userQuery = String(request.body?.query ?? '').trim();
     if (!userQuery) {
       response.status(400).json({ message: 'A query is required.' });
+      return;
+    }
+
+    if (userQuery.length > MAX_QUERY_LENGTH) {
+      response
+        .status(400)
+        .json({ message: `Query must be ${MAX_QUERY_LENGTH} characters or fewer.` });
       return;
     }
 

@@ -30,6 +30,9 @@ export const DEFAULT_SETTINGS: IntegrationSettings = {
     qualityProfileId: 1,
     languageProfileId: 1,
   },
+  anthropic: {
+    apiKey: '',
+  },
 };
 
 /** Owns admin integration settings and the latest health-check results. */

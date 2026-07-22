@@ -24,6 +24,25 @@ const RECOMMENDATION_SCHEMA = {
   additionalProperties: false,
 };
 
+/**
+ * The json_schema output_config constrains what Claude *emits*, but the
+ * parsed result is still untrusted external input by the time it reaches
+ * this process — coerce it into a well-formed array of {id, reason} string
+ * pairs rather than trusting the shape, so a malformed or unexpected
+ * response degrades to fewer/no recommendations instead of throwing when
+ * the caller maps over it.
+ */
+function coerceRecommendations(value) {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.filter(
+    (entry) =>
+      entry && typeof entry === 'object' && typeof entry.id === 'string' && typeof entry.reason === 'string',
+  );
+}
+
 let cachedClient;
 let cachedApiKey;
 
@@ -136,7 +155,7 @@ export async function recommendFromCatalog(settings, items, userQuery) {
 
   try {
     const parsed = JSON.parse(textBlock.text);
-    return { recommendations: parsed.recommendations ?? [] };
+    return { recommendations: coerceRecommendations(parsed.recommendations) };
   } catch {
     return { recommendations: [] };
   }

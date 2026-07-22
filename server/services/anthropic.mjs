@@ -3,6 +3,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { getEnvironmentStatus } from '../domain/settings.mjs';
 
 const RECOMMENDATION_MODEL = 'claude-opus-4-8';
+const MAX_RECOMMENDATIONS = 5;
 
 const RECOMMENDATION_SCHEMA = {
   type: 'object',
@@ -27,20 +28,40 @@ const RECOMMENDATION_SCHEMA = {
 /**
  * The json_schema output_config constrains what Claude *emits*, but the
  * parsed result is still untrusted external input by the time it reaches
- * this process — coerce it into a well-formed array of {id, reason} string
- * pairs rather than trusting the shape, so a malformed or unexpected
- * response degrades to fewer/no recommendations instead of throwing when
- * the caller maps over it.
+ * this process — the schema doesn't (and can't) enforce the "at most
+ * MAX_RECOMMENDATIONS, no duplicate ids" part of the prompt's contract, so
+ * that's enforced here too: drop malformed entries, dedupe by id (first
+ * occurrence wins), cap the count, and rebuild fresh {id, reason} objects
+ * rather than passing the parsed entries through as-is.
  */
 function coerceRecommendations(value) {
   if (!Array.isArray(value)) {
     return [];
   }
 
-  return value.filter(
-    (entry) =>
-      entry && typeof entry === 'object' && typeof entry.id === 'string' && typeof entry.reason === 'string',
-  );
+  const seenIds = new Set();
+  const result = [];
+
+  for (const entry of value) {
+    if (result.length >= MAX_RECOMMENDATIONS) {
+      break;
+    }
+
+    if (
+      !entry ||
+      typeof entry !== 'object' ||
+      typeof entry.id !== 'string' ||
+      typeof entry.reason !== 'string' ||
+      seenIds.has(entry.id)
+    ) {
+      continue;
+    }
+
+    seenIds.add(entry.id);
+    result.push({ id: entry.id, reason: entry.reason });
+  }
+
+  return result;
 }
 
 let cachedClient;
@@ -90,7 +111,7 @@ function buildSystemPrompt(items) {
   return [
     "You are the recommendation assistant for Plex Request Hub.",
     'Recommend titles only from the CATALOG list below — never invent a title or id that is not in it.',
-    "Match the user's request to at most 5 catalog items, ranked most relevant first.",
+    `Match the user's request to at most ${MAX_RECOMMENDATIONS} catalog items, ranked most relevant first, with no duplicate ids.`,
     'If nothing in the catalog fits, return an empty recommendations array.',
     '',
     'CATALOG (one JSON object per line: id, title, kind, year, tags, summary):',

@@ -18,13 +18,17 @@ function filterFallbackFeed(query, kind) {
   });
 }
 
-function attachAvailability(items, settings) {
+export function attachAvailability(items, settings) {
   return Promise.all(
     items.map(async ({ popularity, ...item }) => ({
       ...item,
       availability: await lookupPlexAvailability(item, settings),
     })),
   );
+}
+
+function stripPopularity(items) {
+  return items.map(({ popularity, ...item }) => item);
 }
 
 function requestItemMatches(left, right) {
@@ -70,9 +74,27 @@ function attachRequestStatus(items, requests, currentUserId) {
   });
 }
 
-export async function buildFeed(query, kind, settings, requests = [], currentUserId = '') {
+/**
+ * `includeAvailability` defaults to true for /api/feed, where every item is
+ * shown to the user. Callers that only need up to a handful of items out of
+ * the full catalog (e.g. /api/recommendations, which asks Claude to pick at
+ * most 5) should pass false and call attachAvailability() themselves on just
+ * the items they end up keeping — otherwise every item pays for a Plex
+ * /library/matches round trip that's thrown away.
+ */
+export async function buildFeed(
+  query,
+  kind,
+  settings,
+  requests = [],
+  currentUserId = '',
+  includeAvailability = true,
+) {
   if (!getEnvironmentStatus(settings).tmdbConfigured) {
-    const items = await attachAvailability(filterFallbackFeed(query, kind), settings);
+    const rawItems = filterFallbackFeed(query, kind);
+    const items = includeAvailability
+      ? await attachAvailability(rawItems, settings)
+      : stripPopularity(rawItems);
     return attachRequestStatus(items, requests, currentUserId);
   }
 
@@ -85,6 +107,8 @@ export async function buildFeed(query, kind, settings, requests = [], currentUse
     .sort((left, right) => Number(right.popularity ?? 0) - Number(left.popularity ?? 0))
     .slice(0, 16);
 
-  const items = await attachAvailability(mergedResults, settings);
+  const items = includeAvailability
+    ? await attachAvailability(mergedResults, settings)
+    : stripPopularity(mergedResults);
   return attachRequestStatus(items, requests, currentUserId);
 }

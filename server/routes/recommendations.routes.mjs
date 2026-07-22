@@ -3,7 +3,7 @@ import { Router } from 'express';
 import { getEnvironmentStatus } from '../domain/settings.mjs';
 import { requireAuth } from '../middleware/auth.mjs';
 import { recommendFromCatalog } from '../services/anthropic.mjs';
-import { buildFeed } from '../services/catalog.mjs';
+import { attachAvailability, buildFeed } from '../services/catalog.mjs';
 
 export const recommendationRoutes = Router();
 
@@ -31,12 +31,16 @@ recommendationRoutes.post(
     }
 
     try {
+      // includeAvailability: false — skip the per-item Plex lookup for the
+      // full catalog (up to 16 items); Claude only picks up to 5, so look up
+      // availability just for those below instead of for every candidate.
       const items = await buildFeed(
         '',
         'all',
         request.store.settings,
         request.store.requests,
         request.user.id,
+        false,
       );
       const { recommendations } = await recommendFromCatalog(
         request.store.settings,
@@ -45,12 +49,14 @@ recommendationRoutes.post(
       );
 
       const itemsById = new Map(items.map((item) => [item.id, item]));
-      const matched = recommendations
+      const matchedItems = recommendations
         .map((recommendation) => {
           const item = itemsById.get(recommendation.id);
           return item ? { ...item, reason: recommendation.reason } : null;
         })
         .filter(Boolean);
+
+      const matched = await attachAvailability(matchedItems, request.store.settings);
 
       response.json({ recommendations: matched });
     } catch (error) {

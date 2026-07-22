@@ -90,7 +90,8 @@ function buildSystemPrompt(items) {
  * prefix (4096 tokens for Opus-tier models) — a small demo catalog may not
  * reach that threshold; watch `usage.cache_read_input_tokens` in the debug
  * log below to confirm hits once the catalog is representative of
- * production size. See shared/prompt-caching.md for the full model.
+ * production size. See "Prompt caching" in system-patterns.md for the
+ * caveats specific to this endpoint's catalog size.
  */
 export async function recommendFromCatalog(settings, items, userQuery) {
   if (!getEnvironmentStatus(settings).anthropicConfigured) {
@@ -116,7 +117,7 @@ export async function recommendFromCatalog(settings, items, userQuery) {
     messages: [{ role: 'user', content: userQuery }],
   });
 
-  if (!process.env.NODE_ENV || process.env.NODE_ENV === 'development') {
+  if (process.env.NODE_ENV === 'development') {
     console.debug(
       `[anthropic] cache_read=${response.usage.cache_read_input_tokens} ` +
         `cache_write=${response.usage.cache_creation_input_tokens} ` +
@@ -133,6 +134,10 @@ export async function recommendFromCatalog(settings, items, userQuery) {
     return { recommendations: [] };
   }
 
-  const parsed = JSON.parse(textBlock.text);
-  return { recommendations: parsed.recommendations ?? [] };
+  try {
+    const parsed = JSON.parse(textBlock.text);
+    return { recommendations: parsed.recommendations ?? [] };
+  } catch {
+    return { recommendations: [] };
+  }
 }

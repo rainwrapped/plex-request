@@ -28,6 +28,15 @@ export async function ensureStore() {
       if (!parsed.settings.anthropic) {
         parsed.settings.anthropic = seededSettings.anthropic;
         needsWrite = true;
+      } else if (!parsed.settings.anthropic.apiKey && seededSettings.anthropic.apiKey) {
+        // The admin settings API can only ever add/replace a key, never see
+        // it go from set to unset (normalizeSecret keeps the current value
+        // when no update is sent). So an empty stored key unambiguously
+        // means "never configured" — safe to backfill from the environment
+        // if ANTHROPIC_API_KEY is set now, even after the store already
+        // existed without it.
+        parsed.settings.anthropic.apiKey = seededSettings.anthropic.apiKey;
+        needsWrite = true;
       }
 
       if (needsWrite) {

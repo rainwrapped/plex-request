@@ -1,3 +1,5 @@
+import { useAmbientAnthropicAuth } from '../config.mjs';
+
 export function getEnvironmentStatus(settings) {
   return {
     tmdbConfigured: Boolean(settings.tmdb.apiKey || settings.tmdb.readAccessToken),
@@ -8,7 +10,10 @@ export function getEnvironmentStatus(settings) {
     sonarrConfigured: Boolean(
       settings.sonarr.enabled && settings.sonarr.baseUrl && settings.sonarr.apiKey,
     ),
-    anthropicConfigured: Boolean(settings.anthropic.apiKey),
+    // True via an explicit admin/env-configured key, OR via ambient SDK
+    // credential resolution (ant auth login, ANTHROPIC_AUTH_TOKEN, WIF) when
+    // ANTHROPIC_USE_AMBIENT_AUTH opts into it. See server/services/anthropic.mjs.
+    anthropicConfigured: Boolean(settings.anthropic.apiKey) || useAmbientAnthropicAuth,
   };
 }
 

@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 
+import { useAmbientAnthropicAuth } from '../config.mjs';
 import { getEnvironmentStatus } from '../domain/settings.mjs';
 
 const RECOMMENDATION_MODEL = 'claude-opus-4-8';
@@ -65,12 +66,24 @@ function coerceRecommendations(value) {
 }
 
 let cachedClient;
-let cachedApiKey;
+let cachedCacheKey;
 
+/**
+ * An explicit settings.anthropic.apiKey always wins (matches the other
+ * providers' admin-configured-secret pattern). Otherwise, when
+ * ANTHROPIC_USE_AMBIENT_AUTH opts in, construct the client with no apiKey
+ * override at all — the SDK then resolves credentials itself from whatever
+ * is ambient in this process (an `ant auth login` profile,
+ * ANTHROPIC_AUTH_TOKEN, or Workload Identity Federation env vars), which is
+ * how OAuth-based auth reaches this app instead of a static key.
+ */
 function getClient(settings) {
-  if (!cachedClient || cachedApiKey !== settings.anthropic.apiKey) {
-    cachedApiKey = settings.anthropic.apiKey;
-    cachedClient = new Anthropic({ apiKey: cachedApiKey });
+  const apiKey = settings.anthropic.apiKey;
+  const cacheKey = apiKey || (useAmbientAnthropicAuth ? '__ambient__' : '');
+
+  if (!cachedClient || cachedCacheKey !== cacheKey) {
+    cachedCacheKey = cacheKey;
+    cachedClient = apiKey ? new Anthropic({ apiKey }) : new Anthropic();
   }
 
   return cachedClient;

@@ -8,6 +8,7 @@ export function getEnvironmentStatus(settings) {
     sonarrConfigured: Boolean(
       settings.sonarr.enabled && settings.sonarr.baseUrl && settings.sonarr.apiKey,
     ),
+    anthropicConfigured: Boolean(settings.anthropic.apiKey),
   };
 }
 
@@ -30,6 +31,10 @@ export function sanitizeSettings(settings) {
     sonarr: {
       ...settings.sonarr,
       apiKey: settings.sonarr.apiKey ? '***configured***' : '',
+    },
+    anthropic: {
+      ...settings.anthropic,
+      apiKey: settings.anthropic.apiKey ? '***configured***' : '',
     },
   };
 }
@@ -93,5 +98,8 @@ export function normalizeSettings(current, updates) {
       languageProfileId: undefined,
     },
     sonarr: normalizeServiceConfig(current.sonarr, updates?.sonarr),
+    anthropic: {
+      apiKey: normalizeSecret(current.anthropic.apiKey, updates?.anthropic?.apiKey),
+    },
   };
 }

@@ -18,8 +18,19 @@ export async function ensureStore() {
       Array.isArray(parsed.sessions) &&
       parsed.settings
     ) {
+      let needsWrite = false;
+
       if (!Array.isArray(parsed.notifications)) {
         parsed.notifications = [];
+        needsWrite = true;
+      }
+
+      if (!parsed.settings.anthropic) {
+        parsed.settings.anthropic = seededSettings.anthropic;
+        needsWrite = true;
+      }
+
+      if (needsWrite) {
         await writeStore(parsed);
       }
       return;

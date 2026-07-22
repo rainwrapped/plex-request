@@ -57,4 +57,7 @@ export const seededSettings = {
     qualityProfileId: Number(process.env.SONARR_QUALITY_PROFILE_ID || 1),
     languageProfileId: Number(process.env.SONARR_LANGUAGE_PROFILE_ID || 1),
   },
+  anthropic: {
+    apiKey: process.env.ANTHROPIC_API_KEY || '',
+  },
 };

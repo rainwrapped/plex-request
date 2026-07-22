@@ -10,6 +10,7 @@
 - Voted requests are included in request history for voters.
 - Fulfillment retry is restricted to failed or partially fulfilled approved requests.
 - Admins cannot remove their own admin access by self-demoting or self-disabling.
+- `POST /api/recommendations` asks Claude to pick catalog items for a free-text request, with prompt caching on the instructions+catalog system block.
 
 ## What Is Broken
 
@@ -23,6 +24,8 @@
 - Update `system-patterns.md` when architecture, tooling, dependencies, or conventions change.
 - Update `product-context.md` when goals, user flows, roles, or product assumptions change.
 - Add hosting and persistence decisions once deployment requirements are known.
+- Widen the catalog snapshot passed to the recommendation assistant so caching reliably clears the model's minimum cacheable prefix.
+- Exercise `/api/recommendations` against a real `ANTHROPIC_API_KEY` and confirm `cache_read_input_tokens` goes non-zero on repeat requests.
 
 ## Completed
 
@@ -31,3 +34,4 @@
 - Created `product-context.md`, `system-patterns.md`, `active-context.md`, and `progress.md`.
 - Populated all four core memory-bank files with current repo context.
 - Addressed PR #5 review comments and verified with tests/build.
+- Added `POST /api/recommendations` with a cached-prefix Claude prompt (`server/services/anthropic.mjs`); added `settings.anthropic` (env `ANTHROPIC_API_KEY`) with a store-upgrade path for existing local `store.json` files.

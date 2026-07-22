@@ -3,6 +3,7 @@ import express from 'express';
 import { adminRoutes } from './routes/admin.routes.mjs';
 import { authRoutes } from './routes/auth.routes.mjs';
 import { feedRoutes } from './routes/feed.routes.mjs';
+import { recommendationRoutes } from './routes/recommendations.routes.mjs';
 import { requestRoutes } from './routes/requests.routes.mjs';
 
 export function createApp() {
@@ -17,6 +18,7 @@ export function createApp() {
 
   app.use(authRoutes);
   app.use(feedRoutes);
+  app.use(recommendationRoutes);
   app.use(requestRoutes);
   app.use(adminRoutes);
 

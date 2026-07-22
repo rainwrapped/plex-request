@@ -26,16 +26,16 @@ export async function ensureStore() {
       }
 
       if (!parsed.settings.anthropic) {
+        // One-time migration for stores that predate this field. Deliberately
+        // does NOT re-sync on every read once the field exists: the admin
+        // settings API can set apiKey back to '' to intentionally disable
+        // the assistant (normalizeSecret only preserves the current value
+        // when no update is sent, not on an explicit empty string), and an
+        // env-driven resync would silently undo that on the next restart.
+        // This matches how tmdb/plex/radarr/sonarr settings already behave —
+        // env vars seed the initial store; the admin settings API owns it
+        // from then on.
         parsed.settings.anthropic = seededSettings.anthropic;
-        needsWrite = true;
-      } else if (!parsed.settings.anthropic.apiKey && seededSettings.anthropic.apiKey) {
-        // The admin settings API can only ever add/replace a key, never see
-        // it go from set to unset (normalizeSecret keeps the current value
-        // when no update is sent). So an empty stored key unambiguously
-        // means "never configured" — safe to backfill from the environment
-        // if ANTHROPIC_API_KEY is set now, even after the store already
-        // existed without it.
-        parsed.settings.anthropic.apiKey = seededSettings.anthropic.apiKey;
         needsWrite = true;
       }
 

@@ -136,9 +136,12 @@ export interface IntegrationSettings {
   };
   radarr: ServiceSettings;
   sonarr: SonarrSettings;
+  anthropic: {
+    apiKey: string;
+  };
 }
 
-export type IntegrationName = 'tmdb' | 'plex' | 'radarr' | 'sonarr';
+export type IntegrationName = 'tmdb' | 'plex' | 'radarr' | 'sonarr' | 'anthropic';
 
 export interface IntegrationHealthCheck {
   name: IntegrationName;

@@ -18,8 +18,28 @@ export async function ensureStore() {
       Array.isArray(parsed.sessions) &&
       parsed.settings
     ) {
+      let needsWrite = false;
+
       if (!Array.isArray(parsed.notifications)) {
         parsed.notifications = [];
+        needsWrite = true;
+      }
+
+      if (!parsed.settings.anthropic) {
+        // One-time migration for stores that predate this field. Deliberately
+        // does NOT re-sync on every read once the field exists: the admin
+        // settings API can set apiKey back to '' to intentionally disable
+        // the assistant (normalizeSecret only preserves the current value
+        // when no update is sent, not on an explicit empty string), and an
+        // env-driven resync would silently undo that on the next restart.
+        // This matches how tmdb/plex/radarr/sonarr settings already behave —
+        // env vars seed the initial store; the admin settings API owns it
+        // from then on.
+        parsed.settings.anthropic = seededSettings.anthropic;
+        needsWrite = true;
+      }
+
+      if (needsWrite) {
         await writeStore(parsed);
       }
       return;

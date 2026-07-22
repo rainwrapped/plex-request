@@ -1,3 +1,5 @@
+import { useAmbientAnthropicAuth } from '../config.mjs';
+
 export function getEnvironmentStatus(settings) {
   return {
     tmdbConfigured: Boolean(settings.tmdb.apiKey || settings.tmdb.readAccessToken),
@@ -8,6 +10,10 @@ export function getEnvironmentStatus(settings) {
     sonarrConfigured: Boolean(
       settings.sonarr.enabled && settings.sonarr.baseUrl && settings.sonarr.apiKey,
     ),
+    // True via an explicit admin/env-configured key, OR via ambient SDK
+    // credential resolution (ant auth login, ANTHROPIC_AUTH_TOKEN, WIF) when
+    // ANTHROPIC_USE_AMBIENT_AUTH opts into it. See server/services/anthropic.mjs.
+    anthropicConfigured: Boolean(settings.anthropic.apiKey) || useAmbientAnthropicAuth,
   };
 }
 
@@ -30,6 +36,10 @@ export function sanitizeSettings(settings) {
     sonarr: {
       ...settings.sonarr,
       apiKey: settings.sonarr.apiKey ? '***configured***' : '',
+    },
+    anthropic: {
+      ...settings.anthropic,
+      apiKey: settings.anthropic.apiKey ? '***configured***' : '',
     },
   };
 }
@@ -93,5 +103,8 @@ export function normalizeSettings(current, updates) {
       languageProfileId: undefined,
     },
     sonarr: normalizeServiceConfig(current.sonarr, updates?.sonarr),
+    anthropic: {
+      apiKey: normalizeSecret(current.anthropic.apiKey, updates?.anthropic?.apiKey),
+    },
   };
 }

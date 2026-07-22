@@ -7,7 +7,7 @@
 - App initialization restores the session through `SessionFacade` from `src/app/app.config.ts`.
 - Frontend state lives in injectable Angular stores under `src/app/core/state` using `signal` and `computed`.
 - `ApiService` is the thin HTTP boundary and always sends credentials for cookie-backed sessions.
-- Express API lives under `server`, with routes split by auth, feed, requests, and admin responsibilities.
+- Express API lives under `server`, with routes split by auth, feed, requests, recommendations, and admin responsibilities.
 - Shared domain models live in `shared/models.ts`; catalog helpers/types are also shared through `shared/catalog.mjs` and `shared/catalog.d.mts`.
 - Runtime persistence is a local JSON store at `server-data/store.json`, managed by `server/lib/store.mjs` with serialized writes.
 
@@ -46,3 +46,8 @@
 - The API sets basic security headers and limits JSON bodies to `64kb`.
 - Store writes are queued to reduce JSON persistence races.
 - Provider settings can come from environment variables or the admin settings panel.
+- `POST /api/recommendations` (`server/routes/recommendations.routes.mjs`) calls Claude (`server/services/anthropic.mjs`, `@anthropic-ai/sdk`, model `claude-opus-4-8`) to pick catalog items matching a free-text request. Query capped at 500 chars (400 if exceeded). Returns 503 when neither auth path below is configured, matching the TMDb/Plex/Radarr/Sonarr "degrade instead of break" pattern.
+- Two ways to authenticate to Anthropic: (1) `settings.anthropic.apiKey` (env `ANTHROPIC_API_KEY`, or the admin settings panel) — a static key, same pattern as the other providers; (2) `ANTHROPIC_USE_AMBIENT_AUTH=true` (`server/config.mjs`) — OAuth/ambient instead of a key: run `ant auth login` once, set this flag, and the SDK resolves credentials itself (profile, `ANTHROPIC_AUTH_TOKEN`, or WIF) with no key stored anywhere. An explicit `apiKey` always wins if both are set. See `.env.example`.
+- Prompt caching: the system prompt (fixed instructions + a deterministically-sorted catalog snapshot) carries a single `cache_control: {type: "ephemeral"}` breakpoint; the user's question stays in `messages`, after the breakpoint, so it never invalidates the cached prefix. `catalog.buildFeed` currently caps the catalog at 16 items in TMDb-live mode — likely too small to clear the ~4096-token minimum cacheable prefix for Opus-tier models. Verify with the `[anthropic] cache_read=...` debug log (dev-only) before relying on cache hits in production; widen the catalog snapshot if `cache_read_input_tokens` stays at 0.
+- `server/lib/store.mjs` `ensureStore()` upgrades an existing local `store.json` in place when new settings fields (e.g. `settings.anthropic`) are added, mirroring the existing `notifications` backfill.
+- `GET /api/admin/health` includes an `anthropic` check (`server/services/health.mjs` + `checkAnthropicConnection` in `anthropic.mjs`) alongside tmdb/plex/radarr/sonarr. It calls `client.models.retrieve(...)` rather than sending a message, so verifying credentials doesn't spend tokens or require billing credit. Verified live via the admin panel with real OAuth (ambient auth) credentials: "Anthropic credentials accepted (Claude Opus 4.8)."

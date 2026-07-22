@@ -141,7 +141,7 @@ export interface IntegrationSettings {
   };
 }
 
-export type IntegrationName = 'tmdb' | 'plex' | 'radarr' | 'sonarr';
+export type IntegrationName = 'tmdb' | 'plex' | 'radarr' | 'sonarr' | 'anthropic';
 
 export interface IntegrationHealthCheck {
   name: IntegrationName;

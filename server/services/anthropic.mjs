@@ -90,6 +90,19 @@ function getClient(settings) {
 }
 
 /**
+ * Cheap connectivity/auth check for the admin health panel — retrieves
+ * model metadata rather than sending a message, so it doesn't spend tokens
+ * or hit the recommendation prompt just to confirm credentials work.
+ */
+export async function checkAnthropicConnection(settings) {
+  const client = getClient(settings);
+  const model = await client.models.retrieve(RECOMMENDATION_MODEL);
+  return model.display_name
+    ? `Anthropic credentials accepted (${model.display_name}).`
+    : 'Anthropic responded.';
+}
+
+/**
  * Deterministic, stable-order rendering of the catalog. This text becomes
  * part of the cached prompt prefix (see buildSystemPrompt) — any
  * non-determinism here (unsorted items, a JSON.stringify key order that

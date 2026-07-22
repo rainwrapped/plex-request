@@ -1,4 +1,5 @@
 import { getEnvironmentStatus } from '../domain/settings.mjs';
+import { checkAnthropicConnection } from './anthropic.mjs';
 import { getDownloaderHeaders } from './downloaders.mjs';
 import { tmdbFetch } from './tmdb.mjs';
 
@@ -88,6 +89,16 @@ export async function healthChecks(settings) {
       }
 
       return 'Sonarr API reachable.';
+    }),
+  );
+
+  checks.push(
+    await checkService('anthropic', async () => {
+      if (!status.anthropicConfigured) {
+        throw new Error('Anthropic is not configured.');
+      }
+
+      return checkAnthropicConnection(settings);
     }),
   );
 
